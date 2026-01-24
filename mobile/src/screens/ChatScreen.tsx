@@ -15,6 +15,27 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
     const [sending, setSending] = useState(false);
     const [customQuestion, setCustomQuestion] = useState('');
     const [showInput, setShowInput] = useState(false);
+    const [thinkingStep, setThinkingStep] = useState(0);
+
+    // Smart thinking messages to mask rate limits
+    const THINKING_MESSAGES = [
+        "Đang đọc câu hỏi...",
+        "Đang tra cứu thời tiết khu vực...",
+        "Đang phân tích điều kiện ủ...",
+        "Đang tổng hợp kinh nghiệm vùng...",
+        "Đang viết câu trả lời chi tiết..."
+    ];
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (sending) {
+            setThinkingStep(0);
+            interval = setInterval(() => {
+                setThinkingStep(prev => (prev + 1) % THINKING_MESSAGES.length);
+            }, 3000); // Change message every 3s
+        }
+        return () => clearInterval(interval);
+    }, [sending]);
 
     useEffect(() => {
         fetchData();
@@ -198,7 +219,7 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
                             <Text style={{ fontSize: 28 }}>👍</Text>
                         )}
                         <Text style={styles.btnTextPrimary}>
-                            {sending ? 'Đang gửi...' : 'Tui làm xong rồi'}
+                            {sending ? THINKING_MESSAGES[thinkingStep] : 'Tui làm xong rồi'}
                         </Text>
                     </View>
                 </TouchableOpacity>

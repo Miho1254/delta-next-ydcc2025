@@ -3,7 +3,33 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 
-export const geminiModel = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+// Use user-requested 2.5 flash model
+export const geminiModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+// Simple in-memory rate limiter for 5 RPM (Free Tier)
+const requestTimestamps: number[] = [];
+const RATE_LIMIT = {
+    MAX_RPM: 5,
+    INTERVAL_MS: 60 * 1000
+};
+
+async function checkRateLimit() {
+    const now = Date.now();
+    // Remove timestamps older than 1 minute
+    while (requestTimestamps.length > 0 && requestTimestamps[0] < now - RATE_LIMIT.INTERVAL_MS) {
+        requestTimestamps.shift();
+    }
+
+    if (requestTimestamps.length >= RATE_LIMIT.MAX_RPM) {
+        const oldestRequest = requestTimestamps[0];
+        const waitTime = (oldestRequest + RATE_LIMIT.INTERVAL_MS) - now;
+        if (waitTime > 0) {
+            console.log(`⏳ Rate limit protective delay: Waiting ${(waitTime / 1000).toFixed(1)}s...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime + 1000)); // Add 1s buffer
+        }
+    }
+    requestTimestamps.push(Date.now());
+}
 
 export interface AIAnalysisResult {
     decompositionLevel: number;
@@ -224,8 +250,10 @@ export async function analyzeWithGemini(prompt: string, imageBase64?: string, re
                         mimeType: 'image/jpeg',
                     },
                 };
+                await checkRateLimit(); // Check rate limit before request
                 result = await geminiModel.generateContent([prompt, imagePart]);
             } else {
+                await checkRateLimit(); // Check rate limit before request
                 result = await geminiModel.generateContent(prompt);
             }
 

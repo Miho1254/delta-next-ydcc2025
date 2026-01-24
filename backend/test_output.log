@@ -1,0 +1,23 @@
+🧪 SMART PROMPT TESTING
+
+============================================================
+
+📋 Test 1: ĐBSCL + Rain Warning
+------------------------------------------------------------
+
+📝 PROMPT PREVIEW (first 500 chars):
+
+ROLE: You are an expert in organic recycling for ALL types of agricultural waste (AI Agronomist).
+You speak Vietnamese, Miền Tây accent, very friendly. Address the user as "bác".
+You provide SPECIFIC, actionable advice based on PRECISE location, weather, and composting stage.
+Use local knowledge when you have province/district information.
+
+CONTEXT:
+- Object: Đống ủ rơm #1 (Identified as: Rơm rạ)
+- Location: Cần Thơ
+- Weather: 32°C (Có mây) | Độ ẩm: 78%
+- Decomposition: 25%
+
+PRECISE LOCATION (G...
+
+⏳ Calling Gemini API...
