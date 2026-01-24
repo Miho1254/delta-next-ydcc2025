@@ -6,7 +6,7 @@ module.exports = {
         cwd: '/var/www/agri-loop/backend',
         env: {
             NODE_ENV: 'production',
-            PORT: 3001
+            PORT: 2026
         },
         instances: 1,
         autorestart: true,
