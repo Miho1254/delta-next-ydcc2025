@@ -147,13 +147,30 @@ export default function MarketScreen({ navigation }: MarketScreenProps) {
             {renderHeader()}
 
             <FlatList
-                data={PRODUCTS}
+                data={PRODUCTS.filter(p => {
+                    // Search filter
+                    const matchSearch = searchQuery === '' ||
+                        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        p.seller.toLowerCase().includes(searchQuery.toLowerCase());
+                    // Category filter
+                    const matchCategory = activeFilter === 'Tất cả' ||
+                        (activeFilter === 'Phân bón' && p.name.includes('Phân')) ||
+                        (activeFilter === 'Hạt giống' && (p.name.includes('giống') || p.name.includes('Lúa'))) ||
+                        (activeFilter === 'Thuốc sâu' && p.name.includes('Thuốc'));
+                    return matchSearch && matchCategory;
+                })}
                 renderItem={renderProduct}
                 keyExtractor={item => item.id}
                 numColumns={2}
                 ListHeaderComponent={renderBanner}
                 contentContainerStyle={styles.listContent}
                 columnWrapperStyle={{ justifyContent: 'space-between' }}
+                ListEmptyComponent={
+                    <View style={{ padding: 32, alignItems: 'center' }}>
+                        <Text style={{ fontSize: 48, marginBottom: 12 }}>🔍</Text>
+                        <Text style={{ fontSize: 18, color: '#666' }}>Không tìm thấy sản phẩm</Text>
+                    </View>
+                }
             />
         </View>
     );

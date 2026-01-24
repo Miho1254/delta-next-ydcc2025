@@ -135,8 +135,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Việc Nhà Nông</Text>
-                <Text style={styles.headerSubtitle}>Hôm nay, bác khỏe không?</Text>
+                <View>
+                    <Text style={styles.headerTitle}>Việc Nhà Nông</Text>
+                    <Text style={styles.headerSubtitle}>Hôm nay, bác khỏe không?</Text>
+                </View>
+                <TouchableOpacity
+                    style={styles.marketBtn}
+                    onPress={() => navigation.navigate('Market')}
+                    accessibilityLabel="Đi chợ nhà nông"
+                >
+                    <Text style={{ fontSize: 28 }}>🛒</Text>
+                </TouchableOpacity>
             </View>
 
             <FlatList
@@ -161,6 +170,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 style={styles.fab}
                 onPress={() => navigation.navigate('Create')}
                 activeOpacity={0.8}
+                accessibilityLabel="Tạo đống ủ mới"
             >
                 <Text style={styles.fabIcon}>+</Text>
             </TouchableOpacity>
@@ -179,6 +189,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff', // Or slightly transparent
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(0,0,0,0.05)',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     headerTitle: {
         ...FarmerTheme.typography.header,
@@ -189,6 +202,18 @@ const styles = StyleSheet.create({
         color: '#888',
         fontWeight: '500',
         marginTop: 4,
+    },
+    marketBtn: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: FarmerTheme.colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 4,
+        shadowColor: FarmerTheme.colors.primary,
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
     },
 
     list: { padding: 20, paddingBottom: 140 },

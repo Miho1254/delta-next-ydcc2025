@@ -219,11 +219,15 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
                 <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
                     {/* Top App Bar Overlay (Absolute) */}
                     <View style={styles.confirmTopBar}>
-                        <TouchableOpacity style={styles.backBtnCircle} onPress={handleRetake}>
-                            <Text style={{ fontSize: 24, color: '#fff' }}>←</Text>
+                        <TouchableOpacity
+                            style={styles.retakeBtn}
+                            onPress={handleRetake}
+                            accessibilityLabel="Chụp lại ảnh"
+                        >
+                            <Text style={{ fontSize: 16, color: '#fff', marginLeft: 4 }}>↺ Chụp lại</Text>
                         </TouchableOpacity>
                         <Text style={styles.confirmTitle}>Agri-Loop</Text>
-                        <View style={{ width: 48 }} />
+                        <View style={{ width: 80 }} />
                     </View>
 
                     {/* Captured Photo Section */}
@@ -387,6 +391,12 @@ const styles = StyleSheet.create({
     backBtnCircle: {
         width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.3)',
         justifyContent: 'center', alignItems: 'center'
+    },
+    retakeBtn: {
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 20,
     },
     confirmTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold', textShadowRadius: 4, textShadowColor: '#000' },
 

@@ -84,10 +84,21 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
         <View style={styles.container}>
             {/* Header Section */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={styles.backBtn}
+                    accessibilityLabel="Quay lại"
+                >
                     <Text style={{ fontSize: 24, color: '#162210' }}>←</Text>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>Bác Sĩ Cây Trồng Khuyên</Text>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                    <Text style={styles.headerTitle} numberOfLines={1}>Bác Sĩ Cây Trồng Khuyên</Text>
+                    {timeline.filter(t => t.role === 'model').length > 1 && (
+                        <Text style={{ fontSize: 12, color: '#888' }}>
+                            {timeline.filter(t => t.role === 'model').length} lời khuyên
+                        </Text>
+                    )}
+                </View>
                 <View style={{ width: 48 }} />
             </View>
 
