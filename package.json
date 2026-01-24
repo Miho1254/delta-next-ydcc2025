@@ -1,0 +1,17 @@
+{
+    "name": "agri-loop-monorepo",
+    "private": true,
+    "workspaces": [
+        "backend",
+        "mobile"
+    ],
+    "scripts": {
+        "dev:backend": "npm run dev --workspace=backend",
+        "dev:mobile": "npm run start --workspace=mobile",
+        "install:all": "npm install",
+        "build:backend": "npm run build --workspace=backend"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}
