@@ -63,48 +63,65 @@ Chỉ trả về JSON, không có text khác.
 `;
 }
 
-export async function analyzeWithGemini(prompt: string, imageBase64?: string): Promise<AIAnalysisResult> {
-    try {
-        let result;
+// Simple delay function
+function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-        if (imageBase64) {
-            const imagePart = {
-                inlineData: {
-                    data: imageBase64,
-                    mimeType: 'image/jpeg',
+export async function analyzeWithGemini(prompt: string, imageBase64?: string, retries = 3): Promise<AIAnalysisResult> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            let result;
+
+            if (imageBase64) {
+                const imagePart = {
+                    inlineData: {
+                        data: imageBase64,
+                        mimeType: 'image/jpeg',
+                    },
+                };
+                result = await geminiModel.generateContent([prompt, imagePart]);
+            } else {
+                result = await geminiModel.generateContent(prompt);
+            }
+
+            const response = result.response;
+            const text = response.text();
+
+            // Parse JSON from response
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                return JSON.parse(jsonMatch[0]) as AIAnalysisResult;
+            }
+
+            // Fallback response when JSON parsing fails
+            return {
+                decompositionLevel: 0,
+                recommendation: {
+                    action: 'Kiểm tra lại',
+                    reason: 'AI không thể phân tích, vui lòng thử lại',
+                    estimatedDays: null,
                 },
+                chatResponse: text || 'Chào bác! Tui đang xử lý, bác đợi chút nha!',
+                suggestedQuestions: [
+                    'Có cần tưới nước không?',
+                    'Bao lâu nữa thu hoạch?',
+                    'Cần đảo đống không?',
+                ],
             };
-            result = await geminiModel.generateContent([prompt, imagePart]);
-        } else {
-            result = await geminiModel.generateContent(prompt);
+        } catch (error) {
+            console.error(`Gemini AI Error (attempt ${attempt}/${retries}):`, error);
+
+            // If rate limited and more retries left, wait and retry
+            if (attempt < retries) {
+                console.log(`Waiting 12 seconds before retry...`);
+                await delay(12000); // 12 seconds to respect 5 RPM limit
+                continue;
+            }
+
+            throw new Error('AI_ERROR');
         }
-
-        const response = result.response;
-        const text = response.text();
-
-        // Parse JSON from response
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            return JSON.parse(jsonMatch[0]) as AIAnalysisResult;
-        }
-
-        // Fallback response
-        return {
-            decompositionLevel: 0,
-            recommendation: {
-                action: 'Kiểm tra lại',
-                reason: 'AI không thể phân tích, vui lòng thử lại',
-                estimatedDays: null,
-            },
-            chatResponse: text || 'Xin lỗi bác, tui đang bận. Bác thử lại sau nha!',
-            suggestedQuestions: [
-                'Có cần tưới nước không?',
-                'Bao lâu nữa thu hoạch?',
-                'Cần đảo đống không?',
-            ],
-        };
-    } catch (error) {
-        console.error('Gemini AI Error:', error);
-        throw new Error('AI_ERROR');
     }
+
+    throw new Error('AI_ERROR');
 }
