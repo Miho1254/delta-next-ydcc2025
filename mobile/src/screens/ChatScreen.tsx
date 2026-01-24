@@ -132,19 +132,27 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
             <View style={styles.bottomBar}>
                 {/* Primary Success Button */}
                 <TouchableOpacity
-                    style={styles.btnSuccess}
+                    style={[styles.btnSuccess, sending && styles.btnDisabled]}
                     onPress={() => handleSend('Tôi đã làm xong việc này rồi.')}
+                    disabled={sending}
                 >
                     <View style={styles.btnContent}>
-                        <Text style={{ fontSize: 28 }}>👍</Text>
-                        <Text style={styles.btnTextPrimary}>Tui làm xong rồi</Text>
+                        {sending ? (
+                            <ActivityIndicator size={28} color="#fff" />
+                        ) : (
+                            <Text style={{ fontSize: 28 }}>👍</Text>
+                        )}
+                        <Text style={styles.btnTextPrimary}>
+                            {sending ? 'Đang gửi...' : 'Tui làm xong rồi'}
+                        </Text>
                     </View>
                 </TouchableOpacity>
 
                 {/* Secondary Voice Button */}
                 <TouchableOpacity
-                    style={styles.btnVoice}
+                    style={[styles.btnVoice, sending && styles.btnDisabled]}
                     onPress={handleVoiceInput}
+                    disabled={sending}
                 >
                     <View style={styles.btnContent}>
                         <Text style={{ fontSize: 28 }}>🎤</Text>
@@ -252,5 +260,6 @@ const styles = StyleSheet.create({
         shadowColor: '#FFD700', shadowOpacity: 0.3, shadowRadius: 5, elevation: 4,
     },
     btnTextSecondary: { fontSize: 20, fontWeight: 'bold', color: '#3d2e05' },
+    btnDisabled: { opacity: 0.6 },
 
 });

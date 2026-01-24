@@ -209,9 +209,10 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
     if (step === 'confirm') {
         const categories = FALLBACK_CATEGORIES;
         // Determine which one is "Suggested" (matches prediction)
-        // If prediction is not in fallback list, we might want to add it dynamic?
-        // But for this Stitch demo, we assume prediction maps to one of them or we treat "Rơm rạ" as default if unknown.
-        const suggestedValue = predictedName || 'Rơm rạ';
+        // If prediction is "Không rõ" or empty, don't highlight any card as suggested
+        const isValidPrediction = predictedName && predictedName !== 'Không rõ' &&
+            categories.some(cat => cat.value === predictedName);
+        const suggestedValue = isValidPrediction ? predictedName : null;
 
         return (
             <View style={styles.container}>
