@@ -1,35 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Alert, TouchableOpacity } from 'react-native';
-import { Text, ActivityIndicator, IconButton, Button } from 'react-native-paper';
-import { api, TimelineEntry } from '../services/api';
+import { View, StyleSheet, ScrollView, Image, Alert, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { Text, ActivityIndicator } from 'react-native-paper';
+import { api, TimelineEntry, ByProduct } from '../services/api';
 import { getContextForAI } from '../services/ContextService';
 import { ChatScreenProps } from '../types/navigation';
 import { FarmerTheme } from '../theme';
 import * as Speech from 'expo-speech';
 
-// "Digital Manual" Style - No user chat bubbles
-export default function ChatScreen({ route }: ChatScreenProps) {
+export default function ChatScreen({ route, navigation }: ChatScreenProps) {
     const { byproductId, name } = route.params;
     const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
+    const [product, setProduct] = useState<ByProduct | null>(null);
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
-    const [isListening, setIsListening] = useState(false);
-
-    // Filter to show only AI messages in the main view (User intent is implied)
-    // Actually, we might want to show user question as a small "Topic" header above the card?
-    // Design says: "User: Do NOT show user chat bubbles. Just show a status 'Bác đang hỏi...'."
-
-    const flatListRef = useRef<FlatList>(null);
 
     useEffect(() => {
-        fetchTimeline();
-        // fetchContext(); // Context is handled by backend or refreshed when sending
+        fetchData();
     }, [byproductId]);
 
-    const fetchTimeline = async () => {
+    const fetchData = async () => {
         try {
             const response = await api.getByProduct(byproductId);
-            setTimeline(response.timeline.reverse());
+            setProduct(response.byproduct);
+            // Filter only AI messages for the "Prescription" view if we want to be strict,
+            // or just use the whole timeline. Usage: The latest AI message is the "Advice".
+            setTimeline(response.timeline);
         } catch (error) {
             console.error(error);
         } finally {
@@ -46,50 +41,30 @@ export default function ChatScreen({ route }: ChatScreenProps) {
                 contextString: context.fullContext,
             };
             const response = await api.chat(byproductId, payload);
-            setTimeline(response.timeline.reverse());
+            setTimeline(response.timeline); // API returns updated timeline
+
+            // If user said "Done", maybe go back or show success?
+            if (text.includes('xong')) {
+                Alert.alert("Hoan hô!", "Bác giỏi quá! Đã cập nhật trạng thái.", [
+                    { text: "Về trang chủ", onPress: () => navigation.goBack() }
+                ]);
+            }
         } catch (error) {
-            Alert.alert('Lỗi', 'Không gửi được câu hỏi.');
+            Alert.alert('Lỗi', 'Không gửi được.');
         } finally {
             setSending(false);
         }
     };
 
     const handleVoiceInput = () => {
-        // Mock voice input for now
-        Alert.alert('Đang nghe...', 'Bác nói đi...', [
+        Alert.alert('Bác nói gì đi?', '...', [
             { text: 'Hủy', style: 'cancel' },
             { text: 'Gửi "Cần làm gì tiếp?"', onPress: () => handleSend('Tôi cần làm gì tiếp theo?') },
             { text: 'Gửi "Có cần tưới nước?"', onPress: () => handleSend('Đống ủ có cần tưới nước không?') }
         ]);
     };
 
-    const renderCard = ({ item }: { item: TimelineEntry }) => {
-        if (item.role === 'user') {
-            // Option: Hide user messages completely or show as small divider
-            return (
-                <View style={styles.userActionContainer}>
-                    <Text style={styles.userActionText}>Bác đã hỏi: "{item.content}"</Text>
-                </View>
-            );
-        }
-
-        return (
-            <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                    <Text style={styles.cardTitle}>💡 Hướng dẫn</Text>
-                    <IconButton icon="volume-high" size={24} onPress={() => Speech.speak(item.content)} />
-                </View>
-
-                <Text style={styles.cardContent}>{item.content}</Text>
-
-                <View style={styles.cardFooter}>
-                    <Text style={styles.citation}>Nguồn: Viện Lúa ĐBSCL</Text>
-                </View>
-            </View>
-        );
-    };
-
-    if (loading) {
+    if (loading || !product) {
         return (
             <View style={styles.center}>
                 <ActivityIndicator size="large" color={FarmerTheme.colors.primary} />
@@ -97,41 +72,84 @@ export default function ChatScreen({ route }: ChatScreenProps) {
         );
     }
 
+    // Get the latest AI message to display as "The Advice"
+    // Timeline is usually [Oldest, ..., Newest] from backend? 
+    // Wait, typical Prisma `include: { timeline: true }` returns in creation order.
+    // So the LAST element is the newest.
+    // Let's find the last message where role === 'model'.
+    const latestAdvice = [...timeline].reverse().find(t => t.role === 'model');
+    const adviceText = latestAdvice ? latestAdvice.content : "Đang chờ bác sĩ xem xét...";
+
     return (
         <View style={styles.container}>
-            <View style={styles.topBar}>
-                <Text style={styles.topBarText}>{name}</Text>
-                {sending && <Text style={styles.statusText}>... AI đang soạn thảo ...</Text>}
+            {/* Header Section */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <Text style={{ fontSize: 24, color: '#162210' }}>←</Text>
+                </TouchableOpacity>
+                <Text style={styles.headerTitle} numberOfLines={1}>Bác Sĩ Cây Trồng Khuyên</Text>
+                <View style={{ width: 48 }} />
             </View>
 
-            <FlatList
-                ref={flatListRef}
-                data={timeline}
-                renderItem={renderCard}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.list}
-                inverted={true} // Show latest at bottom? No, 'Digital Manual' usually reads top down.
-            // Actually timeline is reversed in state, so index 0 is newest. 
-            // Let's keep standard order for a manual? 
-            // If it's a history of instructions, usually latest is most relevant.
-            // Let's stick to latest (bottom) but since I reversed it in fetchTimeline...
-            // Wait, previous code: setTimeline(response.timeline.reverse()); 
-            // Usually convenient for Chat (inverted).
-            // Let's use Inverted for easy "scroll to bottom".
-            />
+            {/* Main Content Area */}
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                {/* Contextual Image */}
+                <View style={styles.imageContainer}>
+                    {product.startImageUrl ? (
+                        <Image source={{ uri: product.startImageUrl }} style={styles.image} />
+                    ) : (
+                        <View style={[styles.image, { backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center' }]}>
+                            <Text style={{ fontSize: 40 }}>🌾</Text>
+                        </View>
+                    )}
+                    <View style={styles.imageOverlay} />
+                </View>
 
-            {/* Bottom Action Bar */}
-            <View style={styles.actionBar}>
-                <TouchableOpacity style={styles.actionBtnSecondary} onPress={() => handleSend('Xong việc rồi!')}>
-                    <Text style={styles.actionBtnTextSec}>👍 Xong việc</Text>
+                {/* Advice Card: The "Prescription" */}
+                <View style={styles.prescriptionCard}>
+                    {/* Background Icon Decoration */}
+                    <Text style={styles.bgIcon}>🌿</Text>
+
+                    <View style={styles.cardInternal}>
+                        <View style={styles.cardLabelRow}>
+                            <View style={styles.cardIconContainer}>
+                                <Text style={{ fontSize: 20 }}>⚕️</Text>
+                            </View>
+                            <Text style={styles.cardLabel}>LỜI KHUYÊN</Text>
+                            <TouchableOpacity onPress={() => Speech.speak(adviceText)} style={{ marginLeft: 'auto' }}>
+                                <Text style={{ fontSize: 24 }}>🔊</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.adviceText}>
+                            "{adviceText}"
+                        </Text>
+                    </View>
+                </View>
+            </ScrollView>
+
+            {/* Bottom Action Area: Sticky */}
+            <View style={styles.bottomBar}>
+                {/* Primary Success Button */}
+                <TouchableOpacity
+                    style={styles.btnSuccess}
+                    onPress={() => handleSend('Tôi đã làm xong việc này rồi.')}
+                >
+                    <View style={styles.btnContent}>
+                        <Text style={{ fontSize: 28 }}>👍</Text>
+                        <Text style={styles.btnTextPrimary}>Tui làm xong rồi</Text>
+                    </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.micBtn} onPress={handleVoiceInput}>
-                    <Text style={{ fontSize: 30 }}>🎙️</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.actionBtnSecondary} onPress={() => handleSend('Ngoài ra...')}>
-                    <Text style={styles.actionBtnTextSec}>❓ Hỏi khác</Text>
+                {/* Secondary Voice Button */}
+                <TouchableOpacity
+                    style={styles.btnVoice}
+                    onPress={handleVoiceInput}
+                >
+                    <View style={styles.btnContent}>
+                        <Text style={{ fontSize: 28 }}>🎤</Text>
+                        <Text style={styles.btnTextSecondary}>Bấm để hỏi thêm</Text>
+                    </View>
                 </TouchableOpacity>
             </View>
         </View>
@@ -139,107 +157,100 @@ export default function ChatScreen({ route }: ChatScreenProps) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#E0E0E0' },
+    container: { flex: 1, backgroundColor: '#f6f8f6' }, // background-light
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    topBar: {
-        backgroundColor: FarmerTheme.colors.primary,
-        paddingTop: 50,
-        paddingBottom: 20,
-        paddingHorizontal: 20,
-        elevation: 4,
-    },
-    topBarText: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#fff',
-    },
-    statusText: {
-        color: 'yellow',
-        marginTop: 4,
-        fontStyle: 'italic',
-    },
-    list: {
-        padding: 16,
-        paddingBottom: 100,
-    },
-    userActionContainer: {
-        alignSelf: 'center',
-        marginVertical: 10,
-        backgroundColor: 'rgba(0,0,0,0.05)',
-        paddingVertical: 4,
-        paddingHorizontal: 12,
-        borderRadius: 12,
-    },
-    userActionText: {
-        fontSize: 14,
-        color: '#555',
-        fontStyle: 'italic',
-    },
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 20,
-        elevation: 2,
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-        paddingBottom: 8,
-    },
-    cardTitle: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: FarmerTheme.colors.primary,
-    },
-    cardContent: {
-        fontSize: 20, // Large text for farmers
-        lineHeight: 30,
-        color: '#333',
-    },
-    cardFooter: {
-        marginTop: 16,
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#f5f5f5',
-    },
-    citation: {
-        fontSize: 14,
-        color: '#888',
-    },
-    actionBar: {
-        flexDirection: 'row',
-        padding: 16,
-        backgroundColor: '#fff',
-        elevation: 8,
-        alignItems: 'center',
-        justifyContent: 'space-around',
-    },
-    micBtn: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: '#FFF',
-        borderWidth: 4,
-        borderColor: FarmerTheme.colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 40, // Float up
-        elevation: 10,
-    },
-    actionBtnSecondary: {
-        paddingVertical: 12,
+
+    // Header
+    header: {
+        paddingTop: Platform.OS === 'android' ? 40 : 50,
+        paddingBottom: 16,
         paddingHorizontal: 16,
-        borderRadius: 12,
-        backgroundColor: '#f0f2f5',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(246, 248, 246, 0.95)',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.05)',
+        zIndex: 20,
     },
-    actionBtnTextSec: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
+    backBtn: {
+        width: 48, height: 48, borderRadius: 24,
+        justifyContent: 'center', alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.05)',
     },
+    headerTitle: {
+        fontSize: 20, fontWeight: 'bold', color: '#121b0d',
+    },
+
+    scrollContent: {
+        flexGrow: 1, padding: 16, paddingBottom: 160, gap: 24,
+    },
+
+    // Image
+    imageContainer: {
+        width: '100%', aspectRatio: 4 / 3,
+        borderRadius: 24, overflow: 'hidden',
+        elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10,
+        backgroundColor: '#fff',
+    },
+    image: { width: '100%', height: '100%' },
+    imageOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.05)', // Gentle tint
+    },
+
+    // Prescription Card
+    prescriptionCard: {
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        padding: 24,
+        minHeight: 200,
+        elevation: 4,
+        shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 20,
+        borderLeftWidth: 8, borderLeftColor: FarmerTheme.colors.primary,
+        position: 'relative',
+        overflow: 'hidden',
+        justifyContent: 'center',
+    },
+    bgIcon: {
+        position: 'absolute', right: -20, bottom: -20,
+        fontSize: 120, opacity: 0.1, color: FarmerTheme.colors.primary,
+    },
+    cardInternal: { zIndex: 10 },
+    cardLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 },
+    cardIconContainer: {
+        backgroundColor: 'rgba(91, 236, 19, 0.1)',
+        padding: 8, borderRadius: 20,
+    },
+    cardLabel: {
+        fontSize: 14, fontWeight: '700', color: '#888', letterSpacing: 1, textTransform: 'uppercase',
+    },
+    adviceText: {
+        fontSize: 26, fontWeight: 'bold', color: '#0A3305', lineHeight: 36,
+    },
+
+    // Bottom Bar
+    bottomBar: {
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        padding: 24, paddingBottom: 32,
+        backgroundColor: 'rgba(246, 248, 246, 0.9)', // Fade out bg
+        gap: 16,
+    },
+    btnSuccess: {
+        height: 64, borderRadius: 32,
+        backgroundColor: FarmerTheme.colors.primary,
+        justifyContent: 'center', alignItems: 'center',
+        shadowColor: FarmerTheme.colors.primary, shadowOpacity: 0.4, shadowRadius: 10, elevation: 6,
+    },
+    btnContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    btnTextPrimary: { fontSize: 20, fontWeight: 'bold', color: '#162210' },
+
+    btnVoice: {
+        height: 64, borderRadius: 32,
+        backgroundColor: '#FFD700', // Gold
+        justifyContent: 'center', alignItems: 'center',
+        shadowColor: '#FFD700', shadowOpacity: 0.3, shadowRadius: 5, elevation: 4,
+    },
+    btnTextSecondary: { fontSize: 20, fontWeight: 'bold', color: '#3d2e05' },
+
 });

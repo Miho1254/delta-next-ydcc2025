@@ -4,26 +4,20 @@ export const FarmerTheme = {
     ...DefaultTheme,
     colors: {
         ...DefaultTheme.colors,
-        primary: '#2E7D32', // Deep Green
-        accent: '#F9A825', // Golden Yellow
-        background: '#FFFFFF',
-        surface: '#F5F5F5',
-        text: '#1B5E20',
-        placeholder: '#666666',
-        error: '#D32F2F',
+        primary: '#5bec13', // Rice-leaf green (Vibrant)
+        primaryDark: '#4cd10f',
+        accent: '#F9A825', // Keep for secondary highlights if needed
+        background: '#fcfdfa', // Warm off-white
+        surface: '#FFFFFF',
+        text: '#162210', // Dark earth/green
+        placeholder: '#8da38a',
+        error: '#ff5252',
+
+        // Custom semantic colors
+        earthBrown: '#2b1d0e',
+        earthLight: '#efebe9',
     },
-    roundness: 16,
-    fonts: {
-        ...DefaultTheme.fonts,
-        medium: {
-            fontFamily: 'System',
-            fontWeight: '600',
-        },
-        bold: {
-            fontFamily: 'System',
-            fontWeight: 'bold',
-        },
-    },
+    roundness: 24, // Rounded-2xl ~ 24px
     spacing: {
         small: 8,
         medium: 16,
@@ -32,26 +26,27 @@ export const FarmerTheme = {
     },
     typography: {
         header: {
-            fontSize: 28,
-            fontWeight: 'bold',
-            lineHeight: 34,
-            color: '#1B5E20',
+            fontSize: 34, // Giant
+            fontWeight: '800',
+            lineHeight: 40,
+            color: '#162210',
+            letterSpacing: -0.5,
         },
         subHeader: {
-            fontSize: 22,
-            fontWeight: '600',
-            lineHeight: 28,
-            color: '#2E7D32',
+            fontSize: 26, // Super
+            fontWeight: '700',
+            lineHeight: 32,
+            color: '#162210',
         },
         body: {
-            fontSize: 18, // Minimum 18px for readability
-            lineHeight: 26,
-            color: '#333333',
+            fontSize: 18,
+            lineHeight: 28,
+            color: '#2b1d0e',
         },
         button: {
             fontSize: 20,
             fontWeight: 'bold',
-            color: '#FFFFFF',
+            color: '#162210',
         },
     },
 } as const;
