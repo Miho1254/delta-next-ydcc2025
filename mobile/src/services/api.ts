@@ -117,6 +117,7 @@ export interface TimelineEntry {
     content: string;
     metadata?: {
         hasImage?: boolean;
+        imageUrl?: string;
         decompositionLevel?: number;
         suggestedQuestions?: string[];
     };

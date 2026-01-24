@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
 import { TextInput, Text, Chip, ActivityIndicator, IconButton } from 'react-native-paper';
 import * as Speech from 'expo-speech';
+import * as ImagePicker from 'expo-image-picker';
 import { api, TimelineEntry } from '../services/api';
 import { ChatScreenProps } from '../types/navigation';
 
@@ -13,6 +14,8 @@ export default function ChatScreen({ route }: ChatScreenProps) {
     const [sending, setSending] = useState(false);
     const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
     const [isListening, setIsListening] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [imageBase64, setImageBase64] = useState<string | null>(null);
     const flatListRef = useRef<FlatList>(null);
 
     useEffect(() => {
@@ -35,14 +38,38 @@ export default function ChatScreen({ route }: ChatScreenProps) {
         }
     };
 
+    const pickImage = async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.5,
+            base64: true,
+        });
+
+        if (!result.canceled) {
+            setSelectedImage(result.assets[0].uri);
+            setImageBase64(result.assets[0].base64 || null);
+        }
+    };
+
     const handleSend = async (text: string) => {
-        if (!text.trim()) return;
+        if (!text.trim() && !imageBase64) return;
 
         setSending(true);
         setInput('');
 
         try {
-            const response = await api.chat(byproductId, { text: text.trim() });
+            const payload = {
+                text: text.trim(),
+                imageBase64: imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : undefined
+            };
+            const response = await api.chat(byproductId, payload);
+
+            // Reset image after sending
+            setSelectedImage(null);
+            setImageBase64(null);
+
             setTimeline(response.timeline.reverse());
 
             if (response.analysis.suggestedQuestions) {
@@ -61,8 +88,6 @@ export default function ChatScreen({ route }: ChatScreenProps) {
     };
 
     const handleVoiceInput = () => {
-        // Note: expo-speech is for TTS, not STT
-        // For hackathon demo, show alert that voice is being processed
         Alert.alert(
             '🎤 Nhập giọng nói',
             'Tính năng nhập giọng nói đang được phát triển.\n\nHãy sử dụng các gợi ý bên dưới hoặc gõ câu hỏi.',
@@ -88,6 +113,13 @@ export default function ChatScreen({ route }: ChatScreenProps) {
             ]}>
                 {item.content}
             </Text>
+            {item.metadata?.imageUrl && (
+                <Image
+                    source={{ uri: item.metadata.imageUrl }}
+                    style={styles.messageImage}
+                    resizeMode="cover"
+                />
+            )}
             <View style={styles.messageFooter}>
                 <Text style={styles.timestamp}>
                     {new Date(item.timestamp).toLocaleTimeString('vi-VN')}
@@ -165,20 +197,40 @@ export default function ChatScreen({ route }: ChatScreenProps) {
                     iconColor={isListening ? '#f44336' : '#2e7d32'}
                     disabled={sending}
                 />
-                <TextInput
-                    value={input}
-                    onChangeText={setInput}
-                    placeholder="Hỏi AI về đống ủ..."
-                    style={styles.input}
-                    mode="outlined"
+                <IconButton
+                    icon="camera"
+                    size={24}
+                    onPress={pickImage}
+                    iconColor={selectedImage ? '#2e7d32' : '#666'}
                     disabled={sending}
-                    onSubmitEditing={() => handleSend(input)}
                 />
+                <View style={{ flex: 1 }}>
+                    {selectedImage && (
+                        <View style={styles.previewContainer}>
+                            <Image source={{ uri: selectedImage }} style={styles.previewThumb} />
+                            <IconButton
+                                icon="close-circle"
+                                size={16}
+                                onPress={() => { setSelectedImage(null); setImageBase64(null); }}
+                                style={styles.removePreview}
+                            />
+                        </View>
+                    )}
+                    <TextInput
+                        value={input}
+                        onChangeText={setInput}
+                        placeholder="Hỏi AI về đống ủ..."
+                        style={styles.input}
+                        mode="outlined"
+                        disabled={sending}
+                        onSubmitEditing={() => handleSend(input)}
+                    />
+                </View>
                 <IconButton
                     icon={sending ? 'loading' : 'send'}
                     size={24}
                     onPress={() => handleSend(input)}
-                    disabled={sending || !input.trim()}
+                    disabled={sending || (!input.trim() && !selectedImage)}
                     iconColor="#2e7d32"
                 />
             </View>
@@ -210,4 +262,8 @@ const styles = StyleSheet.create({
     suggestionText: { fontSize: 12 },
     inputContainer: { flexDirection: 'row', alignItems: 'center', padding: 8, backgroundColor: 'white', borderTopWidth: 1, borderTopColor: '#eee' },
     input: { flex: 1, maxHeight: 100 },
+    messageImage: { width: 200, height: 150, borderRadius: 8, marginBottom: 8 },
+    previewContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+    previewThumb: { width: 40, height: 40, borderRadius: 4, marginRight: 8 },
+    removePreview: { position: 'absolute', top: -10, right: -10, margin: 0 },
 });

@@ -3,12 +3,32 @@ import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 're
 import { TextInput, Button, Text, Title, RadioButton, HelperText } from 'react-native-paper';
 import { api } from '../services/api';
 import { CreateScreenProps } from '../types/navigation';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'react-native';
 
 export default function CreateScreen({ navigation }: CreateScreenProps) {
     const [name, setName] = useState('');
     const [type, setType] = useState('straw');
     const [loading, setLoading] = useState(false);
+    const [image, setImage] = useState<string | null>(null);
+    const [imageBase64, setImageBase64] = useState<string | null>(null);
     const [error, setError] = useState('');
+
+    const pickImage = async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.5,
+            base64: true,
+        });
+
+        if (!result.canceled) {
+            setImage(result.assets[0].uri);
+            setImageBase64(result.assets[0].base64 || null);
+        }
+    };
+
 
     const handleCreate = async () => {
         if (!name.trim()) {
@@ -24,6 +44,7 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
                 name: name.trim(),
                 type,
                 location: '0,0',
+                imageBase64: imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : undefined,
             });
             navigation.goBack();
         } catch (err: unknown) {
@@ -49,6 +70,15 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
                     mode="outlined"
                     placeholder="VD: Đống rơm ruộng trên"
                 />
+
+                <Button mode="outlined" onPress={pickImage} style={styles.input}>
+                    {image ? 'Chọn ảnh khác' : 'Chụp ảnh / Chọn ảnh'}
+                </Button>
+
+                {image && (
+                    <Image source={{ uri: image }} style={styles.previewImage} />
+                )}
+
 
                 <Text style={styles.label}>Loại phụ phẩm:</Text>
                 <RadioButton.Group onValueChange={setType} value={type}>
@@ -80,6 +110,7 @@ const styles = StyleSheet.create({
     content: { padding: 24 },
     title: { fontSize: 24, marginBottom: 24, color: '#2e7d32' },
     input: { marginBottom: 16 },
+    previewImage: { width: '100%', height: 200, marginBottom: 16, borderRadius: 8 },
     label: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#333' },
     button: { marginTop: 24, backgroundColor: '#2e7d32' },
     buttonContent: { paddingVertical: 8 },

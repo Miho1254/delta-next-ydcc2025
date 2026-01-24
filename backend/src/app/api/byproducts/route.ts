@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyAuth, unauthorizedResponse, errorResponse, successResponse } from '@/lib/auth';
 import { z } from 'zod';
+import { uploadImage } from '@/lib/storage';
 
 // GET /api/byproducts - List all byproducts for current user
 export async function GET(req: NextRequest) {
@@ -37,8 +38,13 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const data = CreateByProductSchema.parse(body);
 
-        // TODO: Upload image to Supabase Storage and get URL
-        const startImageUrl = data.imageBase64 ? 'pending-upload' : '';
+
+        // Upload image if provided
+        let startImageUrl = '';
+        if (data.imageBase64) {
+            const fileName = `byproducts/${user.userId}/${Date.now()}.jpg`;
+            startImageUrl = await uploadImage(data.imageBase64, fileName);
+        }
 
         const byproduct = await prisma.byProduct.create({
             data: {

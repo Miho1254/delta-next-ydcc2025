@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { verifyAuth, unauthorizedResponse, errorResponse, successResponse } from '@/lib/auth';
 import { buildPrompt, analyzeWithGemini } from '@/lib/gemini';
 import { z } from 'zod';
+import { uploadImage } from '@/lib/storage';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -57,6 +58,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
             userMessage
         );
 
+        // Upload image if provided
+        let imageUrl = '';
+        if (data.imageBase64) {
+            const fileName = `chat/${id}/${Date.now()}.jpg`;
+            imageUrl = await uploadImage(data.imageBase64, fileName);
+        }
+
         const analysis = await analyzeWithGemini(prompt, data.imageBase64);
 
         // Save user message to timeline
@@ -66,7 +74,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
                 timestamp: BigInt(Date.now()),
                 role: 'user',
                 content: userMessage,
-                metadata: data.imageBase64 ? { hasImage: true } : {},
+                metadata: data.imageBase64 ? { hasImage: true, imageUrl } : {},
             },
         });
 
