@@ -145,7 +145,7 @@ async function runTests() {
                 hasVietnamese: /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(result.chatResponse),
                 mentionsLocation: result.chatResponse.toLowerCase().includes(scenario.richContext.gps?.province.toLowerCase() || '') ||
                     result.chatResponse.toLowerCase().includes(scenario.richContext.gps?.district.toLowerCase() || ''),
-                mentionsWeather: scenario.richContext.warnings.length > 0 ?
+                mentionsWeather: (scenario.richContext.warnings?.length || 0) > 0 ?
                     result.chatResponse.includes('che') || result.chatResponse.includes('phủ') || result.chatResponse.includes('mưa') : true,
                 hasSuggestions: (result.suggestedQuestions?.length || 0) >= 2
             };
