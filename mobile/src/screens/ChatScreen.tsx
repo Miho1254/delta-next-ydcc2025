@@ -80,6 +80,13 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
     const latestAdvice = [...timeline].reverse().find(t => t.role === 'model');
     const adviceText = latestAdvice ? latestAdvice.content : "Đang chờ bác sĩ xem xét...";
 
+    // Extract AI-suggested questions from latest advice metadata
+    const suggestedQuestions: string[] = latestAdvice?.metadata?.suggestedQuestions || [
+        'Có cần tưới nước không?',
+        'Bao lâu nữa thu hoạch?',
+        'Cần đảo đống không?',
+    ];
+
     return (
         <View style={styles.container}>
             {/* Header Section */}
@@ -141,6 +148,23 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
 
             {/* Bottom Action Area: Sticky */}
             <View style={styles.bottomBar}>
+                {/* AI Suggested Questions - Dynamic Selection Mode */}
+                <View style={styles.suggestionsContainer}>
+                    <Text style={styles.suggestionsLabel}>💡 Bác muốn hỏi gì?</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestionsScroll}>
+                        {suggestedQuestions.map((q, idx) => (
+                            <TouchableOpacity
+                                key={idx}
+                                style={[styles.suggestionChip, sending && styles.btnDisabled]}
+                                onPress={() => handleSend(q)}
+                                disabled={sending}
+                            >
+                                <Text style={styles.suggestionText}>{q}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+
                 {/* Primary Success Button */}
                 <TouchableOpacity
                     style={[styles.btnSuccess, sending && styles.btnDisabled]}
@@ -156,18 +180,6 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
                         <Text style={styles.btnTextPrimary}>
                             {sending ? 'Đang gửi...' : 'Tui làm xong rồi'}
                         </Text>
-                    </View>
-                </TouchableOpacity>
-
-                {/* Secondary Voice Button */}
-                <TouchableOpacity
-                    style={[styles.btnVoice, sending && styles.btnDisabled]}
-                    onPress={handleVoiceInput}
-                    disabled={sending}
-                >
-                    <View style={styles.btnContent}>
-                        <Text style={{ fontSize: 28 }}>🎤</Text>
-                        <Text style={styles.btnTextSecondary}>Bấm để hỏi thêm</Text>
                     </View>
                 </TouchableOpacity>
             </View>
@@ -272,5 +284,33 @@ const styles = StyleSheet.create({
     },
     btnTextSecondary: { fontSize: 20, fontWeight: 'bold', color: '#3d2e05' },
     btnDisabled: { opacity: 0.6 },
+
+    // Suggestion Chips (Selection Mode)
+    suggestionsContainer: {
+        marginBottom: 8,
+    },
+    suggestionsLabel: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 8,
+        fontWeight: '600',
+    },
+    suggestionsScroll: {
+        gap: 10,
+        paddingRight: 20,
+    },
+    suggestionChip: {
+        backgroundColor: '#FFF8E1',
+        borderWidth: 2,
+        borderColor: '#FFD700',
+        paddingVertical: 12,
+        paddingHorizontal: 18,
+        borderRadius: 24,
+    },
+    suggestionText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#5D4E00',
+    },
 
 });
