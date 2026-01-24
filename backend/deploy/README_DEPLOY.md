@@ -6,6 +6,8 @@
 - **Git**: Đã cài đặt
 - **Quyền Root/Sudo**
 
+> **Lưu ý:** Script mặc định sử dụng HTTPS để clone. Nếu repo của bạn là **Public**, nó sẽ chạy ngay lập tức. Nếu là **Private**, bạn cần nhập Username/Password (Token) khi được hỏi, hoặc tráo đổi sang SSH URL trong script.
+
 ## 2. Cách Deploy nhanh (One-Liner)
 
 SSH vào VPS và chạy lệnh sau (Tự động Clone, Install, Build & Setup PM2):
