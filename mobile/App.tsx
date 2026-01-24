@@ -11,8 +11,9 @@ import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import CreateScreen from './src/screens/CreateScreen';
 import ChatScreen from './src/screens/ChatScreen';
+import { RootStackParamList } from './src/types/navigation';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const theme = {
   ...MD3LightTheme,
@@ -50,8 +51,8 @@ export default function App() {
           {!isLoggedIn ? (
             <Stack.Navigator screenOptions={{ headerShown: false }}>
               <Stack.Screen name="Login">
-                {(props) => (
-                  <LoginScreen {...props} onLoginSuccess={() => setIsLoggedIn(true)} />
+                {() => (
+                  <LoginScreen onLoginSuccess={() => setIsLoggedIn(true)} />
                 )}
               </Stack.Screen>
             </Stack.Navigator>
@@ -76,7 +77,7 @@ export default function App() {
               <Stack.Screen
                 name="Chat"
                 component={ChatScreen}
-                options={({ route }: { route: { params?: { name?: string } } }) => ({
+                options={({ route }) => ({
                   title: route.params?.name || 'Chat với AI',
                 })}
               />

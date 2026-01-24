@@ -2,12 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Text, Title, RadioButton, HelperText } from 'react-native-paper';
 import { api } from '../services/api';
-
-interface CreateScreenProps {
-    navigation: {
-        goBack: () => void;
-    };
-}
+import { CreateScreenProps } from '../types/navigation';
 
 export default function CreateScreen({ navigation }: CreateScreenProps) {
     const [name, setName] = useState('');
@@ -28,7 +23,7 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
             await api.createByProduct({
                 name: name.trim(),
                 type,
-                location: '0,0', // TODO: Get actual location
+                location: '0,0',
             });
             navigation.goBack();
         } catch (err: unknown) {
@@ -81,32 +76,11 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-    },
-    content: {
-        padding: 24,
-    },
-    title: {
-        fontSize: 24,
-        marginBottom: 24,
-        color: '#2e7d32',
-    },
-    input: {
-        marginBottom: 16,
-    },
-    label: {
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: 8,
-        color: '#333',
-    },
-    button: {
-        marginTop: 24,
-        backgroundColor: '#2e7d32',
-    },
-    buttonContent: {
-        paddingVertical: 8,
-    },
+    container: { flex: 1, backgroundColor: '#f5f5f5' },
+    content: { padding: 24 },
+    title: { fontSize: 24, marginBottom: 24, color: '#2e7d32' },
+    input: { marginBottom: 16 },
+    label: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#333' },
+    button: { marginTop: 24, backgroundColor: '#2e7d32' },
+    buttonContent: { paddingVertical: 8 },
 });
