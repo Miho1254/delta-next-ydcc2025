@@ -36,6 +36,13 @@ interface RichContextData {
         warnings: string[];
     };
     gps: DetailedLocation | null;
+    timeline?: CompostingStage;
+}
+
+interface CompostingStage {
+    daysElapsed: number;
+    phase: string;      // 'Giai đoạn khởi động', 'Giai đoạn nóng', etc.
+    advice: string;
 }
 
 // Detailed GPS location data for precise localization
@@ -292,8 +299,37 @@ function analyzeCompostingConditions(forecast: WeatherForecast | null): { optima
     return { optimalConditions: optimal, warnings };
 }
 
+// Analyze composting stage based on start date
+function analyzeTimeline(startDateStr?: string): CompostingStage | undefined {
+    if (!startDateStr) return undefined;
+
+    const start = new Date(startDateStr);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - start.getTime());
+    const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    let phase = '';
+    let advice = '';
+
+    if (days <= 3) {
+        phase = 'Giai đoạn 1: Khởi động (Mesophilic)';
+        advice = 'Vi sinh vật bắt đầu hoạt động. Cần đảm bảo độ ẩm 50-60%.';
+    } else if (days <= 15) {
+        phase = 'Giai đoạn 2: Nóng (Thermophilic)';
+        advice = 'Nhiệt độ đống ủ tăng cao. Cần đảo trộn 3-4 ngày/lần để cung cấp oxy.';
+    } else if (days <= 30) {
+        phase = 'Giai đoạn 3: Nguội dần (Cooling)';
+        advice = 'Nhiệt độ giảm, nấm hoạt động mạnh. Tưới nước bổ sung nếu khô.';
+    } else {
+        phase = 'Giai đoạn 4: Ổn định (Curing)';
+        advice = 'Đống ủ chuyển sang màu nâu đen, mùi đất. Sắp thu hoạch được.';
+    }
+
+    return { daysElapsed: days, phase, advice };
+}
+
 // Main function: Get RICH context for AI
-export async function getContextForAI(): Promise<RichContextData> {
+export async function getContextForAI(productData?: { createdAt: string }): Promise<RichContextData> {
     const defaultContext: RichContextData = {
         location: 'Không xác định',
         weather: 'Không có dữ liệu',
@@ -358,6 +394,9 @@ export async function getContextForAI(): Promise<RichContextData> {
         // Analyze composting conditions
         const compostingAnalysis = analyzeCompostingConditions(forecast);
 
+        // Analyze timeline
+        const timeline = analyzeTimeline(productData?.createdAt);
+
         // Build full context string for Gemini with detailed GPS
         let fullContext = `📍 Vị trí: ${geocodedLocation.detailed.fullAddress} | 🌡️ ${weatherString}`;
 
@@ -375,6 +414,10 @@ export async function getContextForAI(): Promise<RichContextData> {
             fullContext += ` | CẢNH BÁO: ${compostingAnalysis.warnings.join('; ')}`;
         }
 
+        if (timeline) {
+            fullContext += ` | ⏳ ${timeline.phase} (Ngày ${timeline.daysElapsed}): ${timeline.advice}`;
+        }
+
         // Add GPS coordinates for precision
         fullContext += ` | GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
 
@@ -389,6 +432,7 @@ export async function getContextForAI(): Promise<RichContextData> {
             },
             composting: compostingAnalysis,
             gps: geocodedLocation.detailed,
+            timeline
         };
     } catch (error) {
         console.error('Context service error:', error);
@@ -397,10 +441,10 @@ export async function getContextForAI(): Promise<RichContextData> {
 }
 
 // Quick function to get formatted context string only
-export async function getContextString(): Promise<string> {
-    const context = await getContextForAI();
+export async function getContextString(createdAt?: string): Promise<string> {
+    const context = await getContextForAI(createdAt ? { createdAt } : undefined);
     return context.fullContext;
 }
 
 // Export types for use in other files
-export type { RichContextData, RegionProfile, WeatherForecast, DetailedLocation };
+export type { RichContextData, RegionProfile, WeatherForecast, DetailedLocation, CompostingStage };

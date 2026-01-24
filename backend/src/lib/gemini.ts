@@ -63,6 +63,11 @@ export interface RichContext {
         commune: string;
         fullAddress: string;
     };
+    timeline?: {
+        daysElapsed: number;
+        phase: string;
+        advice: string;
+    };
 }
 
 // Build GPS location section for precise localization
@@ -139,6 +144,18 @@ COMPOSTING JOURNEY:
         }`;
 }
 
+// Build timeline context from client analysis
+function buildTimelineContext(timeline?: { daysElapsed: number; phase: string; advice: string }): string {
+    if (!timeline) return '';
+
+    return `
+TIMELINE ANALYSIS (Calculated):
+- Giai đoạn: ${timeline.phase}
+- Ngày thứ: ${timeline.daysElapsed}
+- Lời khuyên giai đoạn: "${timeline.advice}"
+(Use this to guide your recommendation)`;
+}
+
 
 export function buildPrompt(
     byproduct: { name: string; type: string; location: string; contextData: unknown },
@@ -161,6 +178,7 @@ export function buildPrompt(
         contextData.daysSinceStart || richContext?.daysSinceStart,
         contextData.totalInteractions || richContext?.totalInteractions
     );
+    const timelineContext = richContext?.timeline ? buildTimelineContext(richContext.timeline) : '';
 
     return `
 ROLE: You are an expert in organic recycling for ALL types of agricultural waste (AI Agronomist).
@@ -177,6 +195,7 @@ ${gpsLocation}
 ${regionAdvice}
 ${weatherWarnings}
 ${learningContext}
+${timelineContext}
 
 CONVERSATION HISTORY:
 ${recentHistory || 'No history yet'}

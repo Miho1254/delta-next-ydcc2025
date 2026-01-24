@@ -58,7 +58,7 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
     const handleSend = async (text: string) => {
         setSending(true);
         try {
-            const context = await getContextForAI();
+            const context = await getContextForAI(product ? { createdAt: product.createdAt } : undefined);
 
             // Build rich context for smarter AI prompts
             const richContext = {
@@ -80,6 +80,7 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
                     commune: context.gps.commune,
                     fullAddress: context.gps.fullAddress,
                 } : undefined,
+                timeline: context.timeline,
             };
 
             const payload = {
@@ -103,8 +104,6 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
         }
     };
 
-
-
     if (loading || !product) {
         return (
             <View style={styles.center}>
@@ -114,10 +113,6 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
     }
 
     // Get the latest AI message to display as "The Advice"
-    // Timeline is usually [Oldest, ..., Newest] from backend? 
-    // Wait, typical Prisma `include: { timeline: true }` returns in creation order.
-    // So the LAST element is the newest.
-    // Let's find the last message where role === 'model'.
     const latestAdvice = [...timeline].reverse().find(t => t.role === 'model');
     const adviceText = latestAdvice ? latestAdvice.content : "Đang chờ bác sĩ xem xét...";
 
@@ -130,35 +125,40 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
 
     return (
         <View style={styles.container}>
-            {/* Header Section */}
+            {/* Header Section: Premium & Friendly */}
             <View style={styles.header}>
                 <TouchableOpacity
                     onPress={() => navigation.goBack()}
                     style={styles.backBtn}
                     accessibilityLabel="Quay lại"
                 >
-                    <Text style={{ fontSize: 24, color: '#162210' }}>←</Text>
+                    <Text style={{ fontSize: 24, color: FarmerTheme.colors.primaryDark }}>←</Text>
                 </TouchableOpacity>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                    <Text style={styles.headerTitle} numberOfLines={1}>Bác Sĩ Cây Trồng Khuyên</Text>
-                    {timeline.filter(t => t.role === 'model').length > 1 && (
-                        <Text style={{ fontSize: 12, color: '#888' }}>
-                            {timeline.filter(t => t.role === 'model').length} lời khuyên
+                    <Text style={[styles.headerTitle, { color: FarmerTheme.colors.primaryDark }]}>BÁC SĨ CÂY TRỒNG</Text>
+                    <View style={styles.doctorBadge}>
+                        <Text style={{ fontSize: 12, color: FarmerTheme.colors.surface, fontWeight: 'bold' }}>
+                            Trợ lý AI 24/7
                         </Text>
-                    )}
+                    </View>
                 </View>
-                <View style={{ width: 48 }} />
+                <TouchableOpacity style={styles.menuBtn}>
+                    <Text style={{ fontSize: 24 }}>⋮</Text>
+                </TouchableOpacity>
             </View>
 
             {/* Main Content Area */}
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Contextual Image */}
+                {/* Contextual Image: Premium Card */}
                 <View style={styles.imageContainer}>
                     {product.startImageUrl ? (
                         <Image source={{ uri: product.startImageUrl }} style={styles.image} />
                     ) : (
-                        <View style={[styles.image, { backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center' }]}>
-                            <Text style={{ fontSize: 40 }}>🌾</Text>
+                        <View style={[styles.image, styles.fallbackImageContainer]}>
+                            <Text style={{ fontSize: 50 }}>🌱</Text>
+                            <Text style={{ marginTop: 8, color: FarmerTheme.colors.textSecondary, fontWeight: '600' }}>
+                                Đang phân tích mẫu ủ...
+                            </Text>
                         </View>
                     )}
                     <View style={styles.imageOverlay} />
@@ -187,250 +187,249 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
                 </View>
             </ScrollView>
 
-            {/* Bottom Action Area: Sticky */}
-            <View style={styles.bottomBar}>
-                {/* AI Suggested Questions - Dynamic Selection Mode */}
-                <View style={styles.suggestionsContainer}>
-                    <Text style={styles.suggestionsLabel}>💡 Bác muốn hỏi gì?</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestionsScroll}>
-                        {suggestedQuestions.map((q, idx) => (
-                            <TouchableOpacity
-                                key={idx}
-                                style={[styles.suggestionChip, sending && styles.btnDisabled]}
-                                onPress={() => handleSend(q)}
-                                disabled={sending}
-                            >
-                                <Text style={styles.suggestionText}>{q}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-
-                {/* Primary Success Button */}
-                <TouchableOpacity
-                    style={[styles.btnSuccess, sending && styles.btnDisabled]}
-                    onPress={() => handleSend('Tôi đã làm xong việc này rồi.')}
-                    disabled={sending}
-                >
-                    <View style={styles.btnContent}>
-                        {sending ? (
-                            <ActivityIndicator size={28} color="#fff" />
-                        ) : (
-                            <Text style={{ fontSize: 28 }}>👍</Text>
-                        )}
-                        <Text style={styles.btnTextPrimary}>
-                            {sending ? THINKING_MESSAGES[thinkingStep] : 'Tui làm xong rồi'}
-                        </Text>
+            {/* Bottom Interaction Area: Safe & Clean */}
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
+                style={styles.bottomWrapper}
+            >
+                {/* Suggestions: Horizontal Scroll Above Input */}
+                {!sending && (
+                    <View style={styles.suggestionsContainer}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestionsScroll}>
+                            {suggestedQuestions.map((q, idx) => (
+                                <TouchableOpacity
+                                    key={idx}
+                                    style={styles.suggestionChip}
+                                    onPress={() => handleSend(q)}
+                                >
+                                    <Text style={styles.suggestionText}>{q}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
                     </View>
-                </TouchableOpacity>
-
-                {/* Custom Question Input */}
-                {showInput ? (
-                    <View style={styles.inputRow}>
-                        <TextInput
-                            style={styles.textInput}
-                            placeholder="Gõ câu hỏi của bác..."
-                            value={customQuestion}
-                            onChangeText={setCustomQuestion}
-                            onSubmitEditing={() => {
-                                if (customQuestion.trim()) {
-                                    handleSend(customQuestion);
-                                    setCustomQuestion('');
-                                    setShowInput(false);
-                                    Keyboard.dismiss();
-                                }
-                            }}
-                            returnKeyType="send"
-                            autoFocus
-                        />
-                        <TouchableOpacity
-                            style={styles.sendBtn}
-                            onPress={() => {
-                                if (customQuestion.trim()) {
-                                    handleSend(customQuestion);
-                                    setCustomQuestion('');
-                                    setShowInput(false);
-                                    Keyboard.dismiss();
-                                }
-                            }}
-                        >
-                            <Text style={{ fontSize: 24 }}>➡️</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    <TouchableOpacity
-                        style={styles.inputToggle}
-                        onPress={() => setShowInput(true)}
-                    >
-                        <Text style={{ fontSize: 20 }}>✍️</Text>
-                        <Text style={styles.inputToggleText}>Hoặc gõ câu hỏi riêng...</Text>
-                    </TouchableOpacity>
                 )}
-            </View>
+
+                {/* Primary Action Button (Smart Thinking State) */}
+                <View style={styles.footerContainer}>
+                    {sending ? (
+                        <View style={styles.thinkingContainer}>
+                            <ActivityIndicator size={24} color={FarmerTheme.colors.primary} />
+                            <Text style={styles.thinkingText}>{THINKING_MESSAGES[thinkingStep]}</Text>
+                        </View>
+                    ) : (
+                        showInput ? (
+                            <View style={styles.inputRow}>
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Đặt câu hỏi khác..."
+                                    placeholderTextColor={FarmerTheme.colors.placeholder}
+                                    value={customQuestion}
+                                    onChangeText={setCustomQuestion}
+                                    onSubmitEditing={() => customQuestion.trim() && handleSend(customQuestion)}
+                                    returnKeyType="send"
+                                    autoFocus
+                                />
+                                <TouchableOpacity
+                                    style={styles.sendBtn}
+                                    onPress={() => customQuestion.trim() && handleSend(customQuestion)}
+                                >
+                                    <Text style={{ fontSize: 20, color: 'white' }}>⬆️</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <View style={styles.defaultActions}>
+                                <TouchableOpacity
+                                    style={styles.btnInputToggle}
+                                    onPress={() => setShowInput(true)}
+                                >
+                                    <Text style={{ fontSize: 20 }}>⌨️</Text>
+                                    <Text style={styles.inputToggleText}>Nhập câu hỏi</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.btnSuccess}
+                                    onPress={() => handleSend('Tôi đã làm xong việc này rồi.')}
+                                >
+                                    <View style={styles.btnContent}>
+                                        <Text style={{ fontSize: 24 }}>👍</Text>
+                                        <Text style={styles.btnTextPrimary}>Đã làm xong</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+                        )
+                    )}
+                </View>
+            </KeyboardAvoidingView>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f6f8f6' }, // background-light
+    // Styles Refined for Premium Feel
+    container: { flex: 1, backgroundColor: FarmerTheme.colors.background }, // Use theme background
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
     // Header
     header: {
-        paddingTop: Platform.OS === 'android' ? 40 : 50,
+        paddingTop: Platform.OS === 'android' ? 48 : 56,
         paddingBottom: 16,
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: 'rgba(246, 248, 246, 0.95)',
+        backgroundColor: FarmerTheme.colors.surface,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0,0,0,0.05)',
+        borderBottomColor: 'rgba(0,0,0,0.03)',
+        elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5,
         zIndex: 20,
     },
     backBtn: {
-        width: 48, height: 48, borderRadius: 24,
+        width: 44, height: 44, borderRadius: 22,
         justifyContent: 'center', alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.05)',
+        backgroundColor: FarmerTheme.colors.background,
+    },
+    menuBtn: {
+        width: 44, height: 44, borderRadius: 22,
+        justifyContent: 'center', alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 20, fontWeight: 'bold', color: '#121b0d',
+        fontSize: 18, fontWeight: '800',
+        letterSpacing: 0.5, textTransform: 'uppercase',
+    },
+    doctorBadge: {
+        backgroundColor: FarmerTheme.colors.primary,
+        paddingHorizontal: 8, paddingVertical: 2,
+        borderRadius: 12, marginTop: 4,
     },
 
     scrollContent: {
-        flexGrow: 1, padding: 16, paddingBottom: 160, gap: 24,
+        flexGrow: 1, padding: 20, paddingBottom: 180, gap: 24,
     },
 
     // Image
     imageContainer: {
-        width: '100%', aspectRatio: 4 / 3,
+        width: '100%', aspectRatio: 16 / 9,
         borderRadius: 24, overflow: 'hidden',
-        elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10,
+        elevation: 6, shadowColor: FarmerTheme.colors.primaryDark, shadowOpacity: 0.15, shadowRadius: 15,
         backgroundColor: '#fff',
+        borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)',
     },
     image: { width: '100%', height: '100%' },
+    fallbackImageContainer: {
+        backgroundColor: FarmerTheme.colors.primaryLight,
+        justifyContent: 'center', alignItems: 'center',
+    },
     imageOverlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.05)', // Gentle tint
+        backgroundColor: 'rgba(0,0,0,0.05)',
     },
 
-    // Prescription Card
+    // Prescription Card (Medical Style)
     prescriptionCard: {
         backgroundColor: '#fff',
-        borderRadius: 24,
-        padding: 24,
-        minHeight: 200,
-        elevation: 4,
-        shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 20,
-        borderLeftWidth: 8, borderLeftColor: FarmerTheme.colors.primary,
-        position: 'relative',
-        overflow: 'hidden',
-        justifyContent: 'center',
+        borderRadius: 16,
+        padding: 28,
+        minHeight: 220,
+        elevation: 3, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+        borderTopWidth: 4, borderTopColor: FarmerTheme.colors.primary, // Medical notepad style
+        position: 'relative', overflow: 'hidden',
     },
     bgIcon: {
-        position: 'absolute', right: -20, bottom: -20,
-        fontSize: 120, opacity: 0.1, color: FarmerTheme.colors.primary,
+        position: 'absolute', right: -30, bottom: -30,
+        fontSize: 140, opacity: 0.04, color: FarmerTheme.colors.text,
     },
     cardInternal: { zIndex: 10 },
-    cardLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 },
+    cardLabelRow: {
+        flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12,
+        borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 12,
+    },
     cardIconContainer: {
-        backgroundColor: 'rgba(91, 236, 19, 0.1)',
-        padding: 8, borderRadius: 20,
+        backgroundColor: FarmerTheme.colors.primaryLight,
+        padding: 8, borderRadius: 12,
     },
     cardLabel: {
-        fontSize: 14, fontWeight: '700', color: '#888', letterSpacing: 1, textTransform: 'uppercase',
+        fontSize: 13, fontWeight: '800', color: FarmerTheme.colors.textSecondary,
+        letterSpacing: 1.5, textTransform: 'uppercase', flex: 1,
     },
     adviceText: {
-        fontSize: 26, fontWeight: 'bold', color: '#0A3305', lineHeight: 36,
+        fontSize: 18, fontWeight: '500', color: FarmerTheme.colors.text,
+        lineHeight: 30, letterSpacing: -0.2,
     },
 
-    // Bottom Bar
-    bottomBar: {
+    // Bottom Wrapper
+    bottomWrapper: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        padding: 24, paddingBottom: 32,
-        backgroundColor: 'rgba(246, 248, 246, 0.9)', // Fade out bg
-        gap: 16,
+        backgroundColor: 'transparent',
     },
-    btnSuccess: {
-        height: 64, borderRadius: 32,
-        backgroundColor: FarmerTheme.colors.primary,
-        justifyContent: 'center', alignItems: 'center',
-        shadowColor: FarmerTheme.colors.primary, shadowOpacity: 0.4, shadowRadius: 10, elevation: 6,
-    },
-    btnContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    btnTextPrimary: { fontSize: 20, fontWeight: 'bold', color: '#162210' },
-
-    btnVoice: {
-        height: 64, borderRadius: 32,
-        backgroundColor: '#FFD700', // Gold
-        justifyContent: 'center', alignItems: 'center',
-        shadowColor: '#FFD700', shadowOpacity: 0.3, shadowRadius: 5, elevation: 4,
-    },
-    btnTextSecondary: { fontSize: 20, fontWeight: 'bold', color: '#3d2e05' },
-    btnDisabled: { opacity: 0.6 },
-
-    // Suggestion Chips (Selection Mode)
     suggestionsContainer: {
-        marginBottom: 8,
-    },
-    suggestionsLabel: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 8,
-        fontWeight: '600',
+        marginBottom: 12,
     },
     suggestionsScroll: {
-        gap: 10,
-        paddingRight: 20,
+        gap: 12, paddingHorizontal: 20,
     },
     suggestionChip: {
-        backgroundColor: '#FFF8E1',
-        borderWidth: 2,
-        borderColor: '#FFD700',
-        paddingVertical: 12,
-        paddingHorizontal: 18,
-        borderRadius: 24,
+        backgroundColor: FarmerTheme.colors.surface,
+        borderWidth: 1, borderColor: FarmerTheme.colors.primaryLight,
+        paddingVertical: 10, paddingHorizontal: 16,
+        borderRadius: 20,
+        shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
     },
     suggestionText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#5D4E00',
+        fontSize: 14, fontWeight: '600', color: FarmerTheme.colors.primaryDark,
     },
 
-    // Text Input (Voice Fallback)
-    inputRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    textInput: {
-        flex: 1,
-        height: 50,
+    footerContainer: {
         backgroundColor: '#fff',
-        borderRadius: 25,
-        paddingHorizontal: 20,
-        fontSize: 16,
-        borderWidth: 2,
-        borderColor: '#ddd',
+        borderTopLeftRadius: 30, borderTopRightRadius: 30,
+        paddingHorizontal: 24, paddingTop: 24, paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+        elevation: 20, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20,
+    },
+
+    // Default Actions Row
+    defaultActions: {
+        flexDirection: 'row', gap: 16,
+    },
+    btnInputToggle: {
+        width: 60, height: 60, borderRadius: 20,
+        backgroundColor: FarmerTheme.colors.background,
+        justifyContent: 'center', alignItems: 'center',
+        borderWidth: 1, borderColor: '#eee',
+    },
+    inputToggleText: { fontSize: 10, color: '#888', marginTop: 4, fontWeight: '600' },
+
+    btnSuccess: {
+        flex: 1, height: 60, borderRadius: 20,
+        backgroundColor: FarmerTheme.colors.primary,
+        justifyContent: 'center', alignItems: 'center',
+        elevation: 4, shadowColor: FarmerTheme.colors.primary, shadowOpacity: 0.3, shadowRadius: 8,
+    },
+    btnContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    btnTextPrimary: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
+    btnDisabled: { opacity: 0.6 },
+
+    // Thinking State
+    thinkingContainer: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
+        height: 50,
+    },
+    thinkingText: {
+        fontSize: 16, color: FarmerTheme.colors.primary, fontWeight: '600',
+        fontStyle: 'italic',
+    },
+
+    // Input Row
+    inputRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+    textInput: {
+        flex: 1, height: 50, backgroundColor: FarmerTheme.colors.background,
+        borderRadius: 16, paddingHorizontal: 16, fontSize: 16,
+        borderWidth: 1, borderColor: FarmerTheme.colors.primaryLight,
+        color: FarmerTheme.colors.text,
     },
     sendBtn: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+        width: 50, height: 50, borderRadius: 16,
         backgroundColor: FarmerTheme.colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    inputToggle: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 12,
-        gap: 8,
-    },
-    inputToggleText: {
-        fontSize: 14,
-        color: '#666',
+        justifyContent: 'center', alignItems: 'center',
     },
 
 });

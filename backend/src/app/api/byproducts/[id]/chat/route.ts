@@ -31,6 +31,11 @@ const ChatSchema = z.object({
             commune: z.string(),
             fullAddress: z.string(),
         }).optional(),
+        timeline: z.object({
+            daysElapsed: z.number(),
+            phase: z.string(),
+            advice: z.string(),
+        }).optional(),
     }).optional(),
 });
 

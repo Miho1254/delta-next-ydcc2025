@@ -95,6 +95,11 @@ class ApiClient {
             rainAlert?: string | null;
             tempAdvice?: string;
             warnings?: string[];
+            timeline?: {
+                daysElapsed: number;
+                phase: string;
+                advice: string;
+            };
         };
     }) {
         return this.request<{ analysis: AIAnalysis; timeline: TimelineEntry[] }>(`/byproducts/${byproductId}/chat`, {

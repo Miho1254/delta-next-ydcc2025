@@ -4,18 +4,28 @@ export const FarmerTheme = {
     ...DefaultTheme,
     colors: {
         ...DefaultTheme.colors,
-        primary: '#5bec13', // Rice-leaf green (Vibrant)
-        primaryDark: '#4cd10f',
-        accent: '#F9A825', // Keep for secondary highlights if needed
-        background: '#fcfdfa', // Warm off-white
-        surface: '#FFFFFF',
-        text: '#162210', // Dark earth/green
-        placeholder: '#8da38a',
-        error: '#ff5252',
+        // Premium Nature Palette (60-30-10 Rule)
+        primary: '#2E7D32',       // Forest Green (Trust, Nature)
+        primaryDark: '#1B5E20',   // Deep Forest
+        primaryLight: '#E8F5E9',  // Pale Sage (Surface)
 
-        // Custom semantic colors
-        earthBrown: '#2b1d0e',
-        earthLight: '#efebe9',
+        accent: '#FF6F00',        // Amber (Action/Warmth)
+        accentLight: '#FFF8E1',   // Pale Amber
+
+        background: '#FAFAFA',    // Clean Neutral (60%)
+        surface: '#FFFFFF',       // Card Surface
+
+        text: '#1B5E20',          // Deep Green Text (High Contrast)
+        textSecondary: '#558B2F', // Muted Green
+        textLight: '#757575',     // Grey text
+
+        placeholder: '#BDBDBD',
+        error: '#D32F2F',
+
+        // Semantic
+        success: '#43A047',
+        warning: '#FFA000',
+        info: '#1976D2',
     },
     roundness: 24, // Rounded-2xl ~ 24px
     spacing: {

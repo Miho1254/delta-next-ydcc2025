@@ -99,6 +99,11 @@ const TEST_SCENARIOS = [
                 district: 'Tân An',
                 commune: 'Khánh Hậu',
                 fullAddress: 'Khánh Hậu, Tân An, Long An'
+            },
+            timeline: {
+                daysElapsed: 20,
+                phase: 'Giai đoạn 2: Nóng (Thermophilic)',
+                advice: 'Nhiệt độ đống ủ tăng cao. Cần đảo trộn 3-4 ngày/lần để cung cấp oxy.'
             }
         } as RichContext
     }
@@ -109,7 +114,7 @@ async function runTests() {
     console.log('='.repeat(60));
 
     // Run ONLY the first scenario to save Quota (20 RPD limit!)
-    const scenario = TEST_SCENARIOS[0];
+    const scenario = TEST_SCENARIOS[2];
     {
         console.log(`\n📋 ${scenario.name}`);
         console.log('-'.repeat(60));
