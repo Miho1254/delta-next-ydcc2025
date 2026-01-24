@@ -11,6 +11,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import CreateScreen from './src/screens/CreateScreen';
 import ChatScreen from './src/screens/ChatScreen';
+import MarketScreen from './src/screens/MarketScreen';
 import { RootStackParamList } from './src/types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -80,6 +81,11 @@ export default function App() {
                 options={({ route }) => ({
                   title: route.params?.name || 'Chat với AI',
                 })}
+              />
+              <Stack.Screen
+                name="Market"
+                component={MarketScreen}
+                options={{ title: 'Chợ Nông Sản' }}
               />
             </Stack.Navigator>
           )}

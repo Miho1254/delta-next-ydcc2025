@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, Title, RadioButton, HelperText } from 'react-native-paper';
+import { TextInput, Button, Text, Title, RadioButton, HelperText, ActivityIndicator } from 'react-native-paper';
 import { api } from '../services/api';
 import { CreateScreenProps } from '../types/navigation';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { Image } from 'react-native';
 
 export default function CreateScreen({ navigation }: CreateScreenProps) {
     const [name, setName] = useState('');
     const [type, setType] = useState('straw');
     const [loading, setLoading] = useState(false);
+    const [gettingLocation, setGettingLocation] = useState(false);
+    const [locationCoords, setLocationCoords] = useState<string>('0,0');
     const [image, setImage] = useState<string | null>(null);
     const [imageBase64, setImageBase64] = useState<string | null>(null);
     const [error, setError] = useState('');
@@ -24,10 +27,30 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
         });
 
         if (!result.canceled) {
+            console.log('Image picked');
             setImage(result.assets[0].uri);
             setImageBase64(result.assets[0].base64 || null);
         }
     };
+
+    const getLocation = async () => {
+        setGettingLocation(true);
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setError('Quyền truy cập vị trí bị từ chối');
+                return;
+            }
+
+            const location = await Location.getCurrentPositionAsync({});
+            setLocationCoords(`${location.coords.latitude},${location.coords.longitude}`);
+        } catch (err) {
+            setError('Không lấy được vị trí');
+        } finally {
+            setGettingLocation(false);
+        }
+    };
+
 
 
     const handleCreate = async () => {
@@ -43,7 +66,7 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
             await api.createByProduct({
                 name: name.trim(),
                 type,
-                location: '0,0',
+                location: locationCoords,
                 imageBase64: imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : undefined,
             });
             navigation.goBack();
@@ -71,7 +94,18 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
                     placeholder="VD: Đống rơm ruộng trên"
                 />
 
-                <Button mode="outlined" onPress={pickImage} style={styles.input}>
+                <Button
+                    mode="outlined"
+                    onPress={getLocation}
+                    loading={gettingLocation}
+                    disabled={gettingLocation}
+                    icon="map-marker"
+                    style={styles.input}
+                >
+                    {locationCoords === '0,0' ? 'Lấy vị trí GPS' : `Vị trí: ${locationCoords}`}
+                </Button>
+
+                <Button mode="outlined" onPress={pickImage} style={styles.input} icon="camera">
                     {image ? 'Chọn ảnh khác' : 'Chụp ảnh / Chọn ảnh'}
                 </Button>
 

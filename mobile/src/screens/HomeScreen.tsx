@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, Alert, NativeModules } from 'react-native';
 import { FAB, Card, Title, Text, Chip, IconButton, ActivityIndicator } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import { api, ByProduct } from '../services/api';
@@ -9,6 +9,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     const [byproducts, setByproducts] = useState<ByProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [fabOpen, setFabOpen] = useState(false);
 
     const fetchByProducts = async () => {
         try {
@@ -27,6 +28,34 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             fetchByProducts();
         }, [])
     );
+
+    React.useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <IconButton
+                    icon="logout"
+                    iconColor="white"
+                    onPress={() => {
+                        Alert.alert('Đăng xuất', 'Bạn có chắc muốn đăng xuất?', [
+                            { text: 'Huỷ', style: 'cancel' },
+                            {
+                                text: 'Đồng ý',
+                                onPress: async () => {
+                                    await api.clearToken();
+                                    // Hack to reload app since we don't expose auth state setter yet
+                                    if (NativeModules.DevSettings) {
+                                        NativeModules.DevSettings.reload();
+                                    } else {
+                                        Alert.alert('Đã đăng xuất', 'Vui lòng khởi động lại ứng dụng.');
+                                    }
+                                }
+                            }
+                        ]);
+                    }}
+                />
+            ),
+        });
+    }, [navigation]);
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -63,7 +92,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     const renderItem = ({ item }: { item: ByProduct }) => (
         <Card
             style={styles.card}
-            onPress={() => navigation.navigate('Detail', { byproductId: item.id })}
+            onPress={() => navigation.navigate('Chat', { byproductId: item.id, name: item.name })}
         >
             <Card.Content>
                 <View style={styles.cardHeader}>
@@ -118,10 +147,27 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                     </View>
                 }
             />
-            <FAB
-                icon="plus"
-                style={styles.fab}
-                onPress={() => navigation.navigate('Create')}
+            <FAB.Group
+                open={fabOpen}
+                icon={fabOpen ? 'close' : 'menu'}
+                actions={[
+                    {
+                        icon: 'cart',
+                        label: 'Chợ nông sản',
+                        onPress: () => navigation.navigate('Market'),
+                        style: { backgroundColor: '#fff' },
+                        color: '#2e7d32',
+                    },
+                    {
+                        icon: 'plus',
+                        label: 'Tạo đống ủ',
+                        onPress: () => navigation.navigate('Create'),
+                        style: { backgroundColor: '#fff' },
+                        color: '#2e7d32',
+                    },
+                ]}
+                onStateChange={({ open }) => setFabOpen(open)}
+                fabStyle={styles.fab}
                 color="white"
             />
         </View>
@@ -132,10 +178,10 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f5f5f5' },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     loadingText: { marginTop: 16, color: '#666' },
-    list: { padding: 16 },
-    card: { marginBottom: 16, elevation: 2 },
+    list: { padding: 16, paddingBottom: 80 },
+    card: { marginBottom: 16, elevation: 2, backgroundColor: 'white' },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-    cardTitle: { fontSize: 18, flex: 1 },
+    cardTitle: { fontSize: 18, flex: 1, fontWeight: 'bold' },
     cardType: { fontSize: 14, color: '#666', marginBottom: 8 },
     progressContainer: { flexDirection: 'row', alignItems: 'center' },
     progressLabel: { fontSize: 14, color: '#666' },
@@ -143,5 +189,5 @@ const styles = StyleSheet.create({
     emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
     emptyText: { fontSize: 18, color: '#666', marginBottom: 8 },
     emptyHint: { fontSize: 14, color: '#999' },
-    fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: '#2e7d32' },
+    fab: { backgroundColor: '#2e7d32', paddingBottom: 0 },
 });
