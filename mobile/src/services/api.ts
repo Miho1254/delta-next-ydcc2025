@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://ydcc.worldsimp.com:2026/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://ydcc.worldsimp.com/api';
 
 class ApiClient {
     private token: string | null = null;
