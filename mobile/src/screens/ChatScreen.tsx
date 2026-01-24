@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, Image, Alert, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, Image, Alert, TouchableOpacity, Dimensions, Platform, TextInput, KeyboardAvoidingView, Keyboard } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import { api, TimelineEntry, ByProduct } from '../services/api';
 import { getContextForAI } from '../services/ContextService';
@@ -13,6 +13,8 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
     const [product, setProduct] = useState<ByProduct | null>(null);
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
+    const [customQuestion, setCustomQuestion] = useState('');
+    const [showInput, setShowInput] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -182,6 +184,49 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
                         </Text>
                     </View>
                 </TouchableOpacity>
+
+                {/* Custom Question Input */}
+                {showInput ? (
+                    <View style={styles.inputRow}>
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="Gõ câu hỏi của bác..."
+                            value={customQuestion}
+                            onChangeText={setCustomQuestion}
+                            onSubmitEditing={() => {
+                                if (customQuestion.trim()) {
+                                    handleSend(customQuestion);
+                                    setCustomQuestion('');
+                                    setShowInput(false);
+                                    Keyboard.dismiss();
+                                }
+                            }}
+                            returnKeyType="send"
+                            autoFocus
+                        />
+                        <TouchableOpacity
+                            style={styles.sendBtn}
+                            onPress={() => {
+                                if (customQuestion.trim()) {
+                                    handleSend(customQuestion);
+                                    setCustomQuestion('');
+                                    setShowInput(false);
+                                    Keyboard.dismiss();
+                                }
+                            }}
+                        >
+                            <Text style={{ fontSize: 24 }}>➡️</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <TouchableOpacity
+                        style={styles.inputToggle}
+                        onPress={() => setShowInput(true)}
+                    >
+                        <Text style={{ fontSize: 20 }}>✍️</Text>
+                        <Text style={styles.inputToggleText}>Hoặc gõ câu hỏi riêng...</Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );
@@ -311,6 +356,42 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#5D4E00',
+    },
+
+    // Text Input (Voice Fallback)
+    inputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    textInput: {
+        flex: 1,
+        height: 50,
+        backgroundColor: '#fff',
+        borderRadius: 25,
+        paddingHorizontal: 20,
+        fontSize: 16,
+        borderWidth: 2,
+        borderColor: '#ddd',
+    },
+    sendBtn: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: FarmerTheme.colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    inputToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        gap: 8,
+    },
+    inputToggleText: {
+        fontSize: 14,
+        color: '#666',
     },
 
 });
