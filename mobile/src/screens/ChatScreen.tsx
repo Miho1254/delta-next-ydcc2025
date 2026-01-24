@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
-import { TextInput, Text, Chip, ActivityIndicator, IconButton } from 'react-native-paper';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, Alert, Image, ToastAndroid } from 'react-native';
+import { TextInput, Text, Chip, ActivityIndicator, IconButton, Button } from 'react-native-paper';
 import * as Speech from 'expo-speech';
 import * as ImagePicker from 'expo-image-picker';
 import { api, TimelineEntry } from '../services/api';
+import { getContextForAI } from '../services/ContextService';
 import { ChatScreenProps } from '../types/navigation';
+
+// Citation text for Responsible AI
+const CITATION_TEXT = '📚 Nguồn tham khảo: Dữ liệu thời tiết thực tế, Viện Lúa ĐBSCL & NASA Power.';
 
 export default function ChatScreen({ route }: ChatScreenProps) {
     const { byproductId, name } = route.params;
@@ -16,11 +20,31 @@ export default function ChatScreen({ route }: ChatScreenProps) {
     const [isListening, setIsListening] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [imageBase64, setImageBase64] = useState<string | null>(null);
+
+    // Context State
+    const [contextLocation, setContextLocation] = useState('Đang lấy vị trí...');
+    const [contextWeather, setContextWeather] = useState('Đang tải thời tiết...');
+    const [contextString, setContextString] = useState('');
+
     const flatListRef = useRef<FlatList>(null);
 
     useEffect(() => {
         fetchTimeline();
+        fetchContext();
     }, [byproductId]);
+
+    const fetchContext = async () => {
+        try {
+            const context = await getContextForAI();
+            setContextLocation(context.location);
+            setContextWeather(context.weather);
+            setContextString(context.fullContext);
+        } catch (error) {
+            console.error('Context fetch error:', error);
+            setContextLocation('Không xác định');
+            setContextWeather('Không có dữ liệu');
+        }
+    };
 
     const fetchTimeline = async () => {
         try {
@@ -62,7 +86,8 @@ export default function ChatScreen({ route }: ChatScreenProps) {
         try {
             const payload = {
                 text: text.trim(),
-                imageBase64: imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : undefined
+                imageBase64: imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : undefined,
+                contextString: contextString, // Inject real-time context
             };
             const response = await api.chat(byproductId, payload);
 
@@ -102,6 +127,19 @@ export default function ChatScreen({ route }: ChatScreenProps) {
         });
     };
 
+    // Feedback handlers
+    const handleFeedback = (type: 'positive' | 'negative', messageId: string) => {
+        const message = type === 'positive'
+            ? '✅ Cảm ơn bác đã phản hồi! AI sẽ học hỏi thêm.'
+            : '📝 Đã ghi nhận. Chúng tôi sẽ cải thiện!';
+
+        if (Platform.OS === 'android') {
+            ToastAndroid.show(message, ToastAndroid.SHORT);
+        } else {
+            Alert.alert('Phản hồi', message);
+        }
+    };
+
     const renderMessage = ({ item }: { item: TimelineEntry }) => (
         <View style={[
             styles.messageBubble,
@@ -120,19 +158,62 @@ export default function ChatScreen({ route }: ChatScreenProps) {
                     resizeMode="cover"
                 />
             )}
-            <View style={styles.messageFooter}>
-                <Text style={styles.timestamp}>
-                    {new Date(item.timestamp).toLocaleTimeString('vi-VN')}
-                </Text>
-                {item.role === 'model' && (
-                    <IconButton
-                        icon="volume-high"
-                        size={16}
-                        onPress={() => speakResponse(item.content)}
-                        iconColor="#666"
-                    />
-                )}
-            </View>
+
+            {/* AI Response Footer */}
+            {item.role === 'model' && (
+                <>
+                    {/* Citation */}
+                    <Text style={styles.citationText}>{CITATION_TEXT}</Text>
+
+                    {/* Feedback Buttons */}
+                    <View style={styles.feedbackRow}>
+                        <Button
+                            mode="text"
+                            compact
+                            onPress={() => handleFeedback('positive', item.id)}
+                            icon="thumb-up-outline"
+                            textColor="#4caf50"
+                            labelStyle={styles.feedbackLabel}
+                        >
+                            Đúng
+                        </Button>
+                        <Button
+                            mode="text"
+                            compact
+                            onPress={() => handleFeedback('negative', item.id)}
+                            icon="thumb-down-outline"
+                            textColor="#ff9800"
+                            labelStyle={styles.feedbackLabel}
+                        >
+                            Cần chỉnh
+                        </Button>
+                        <IconButton
+                            icon="volume-high"
+                            size={16}
+                            onPress={() => speakResponse(item.content)}
+                            iconColor="#666"
+                        />
+                    </View>
+                </>
+            )}
+
+            {/* User message footer */}
+            {item.role === 'user' && (
+                <View style={styles.messageFooter}>
+                    <Text style={styles.timestamp}>
+                        {new Date(item.timestamp).toLocaleTimeString('vi-VN')}
+                    </Text>
+                </View>
+            )}
+        </View>
+    );
+
+    // Context Header Component
+    const ContextHeader = () => (
+        <View style={styles.contextHeader}>
+            <Text style={styles.contextTitle}>🌾 Bản tin Nông nghiệp</Text>
+            <Text style={styles.contextLocation}>📍 {contextLocation}</Text>
+            <Text style={styles.contextWeather}>🌡️ {contextWeather}</Text>
         </View>
     );
 
@@ -151,6 +232,9 @@ export default function ChatScreen({ route }: ChatScreenProps) {
             style={styles.container}
             keyboardVerticalOffset={90}
         >
+            {/* Context Header - Sticky */}
+            <ContextHeader />
+
             <FlatList
                 ref={flatListRef}
                 data={timeline}
@@ -242,27 +326,77 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f5f5f5' },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     loadingText: { marginTop: 16, color: '#666' },
+
+    // Context Header
+    contextHeader: {
+        backgroundColor: '#fff9c4',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0e68c',
+    },
+    contextTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#795548',
+        marginBottom: 4,
+    },
+    contextLocation: {
+        fontSize: 13,
+        color: '#5d4037',
+    },
+    contextWeather: {
+        fontSize: 13,
+        color: '#5d4037',
+        fontWeight: '500',
+    },
+
+    // Messages
     messageList: { padding: 16, paddingBottom: 8, flexGrow: 1 },
     headerText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 16 },
     emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 },
     emptyText: { fontSize: 16, color: '#666' },
     emptyHint: { fontSize: 14, color: '#999', marginTop: 8 },
-    messageBubble: { maxWidth: '80%', padding: 12, borderRadius: 16, marginBottom: 8 },
+    messageBubble: { maxWidth: '85%', padding: 12, borderRadius: 16, marginBottom: 12 },
     userBubble: { backgroundColor: '#2e7d32', alignSelf: 'flex-end', borderBottomRightRadius: 4 },
     modelBubble: { backgroundColor: 'white', alignSelf: 'flex-start', borderBottomLeftRadius: 4, elevation: 1 },
     messageText: { fontSize: 15, lineHeight: 22 },
     userText: { color: 'white' },
     modelText: { color: '#333' },
     messageFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 4 },
-    timestamp: { fontSize: 10, color: '#999' },
+    timestamp: { fontSize: 10, color: 'rgba(255,255,255,0.7)' },
+    messageImage: { width: 200, height: 150, borderRadius: 8, marginBottom: 8 },
+
+    // Citation & Feedback
+    citationText: {
+        fontSize: 11,
+        fontStyle: 'italic',
+        color: '#9e9e9e',
+        marginTop: 8,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+    },
+    feedbackRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 4,
+        gap: 0,
+    },
+    feedbackLabel: {
+        fontSize: 11,
+    },
+
+    // Suggestions
     suggestionsContainer: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: 'white', borderTopWidth: 1, borderTopColor: '#eee' },
     suggestionsLabel: { fontSize: 12, color: '#2e7d32', fontWeight: '600', marginBottom: 8 },
     suggestionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     suggestionChip: { backgroundColor: '#e8f5e9' },
     suggestionText: { fontSize: 12 },
+
+    // Input
     inputContainer: { flexDirection: 'row', alignItems: 'center', padding: 8, backgroundColor: 'white', borderTopWidth: 1, borderTopColor: '#eee' },
     input: { flex: 1, maxHeight: 100 },
-    messageImage: { width: 200, height: 150, borderRadius: 8, marginBottom: 8 },
     previewContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
     previewThumb: { width: 40, height: 40, borderRadius: 4, marginRight: 8 },
     removePreview: { position: 'absolute', top: -10, right: -10, margin: 0 },

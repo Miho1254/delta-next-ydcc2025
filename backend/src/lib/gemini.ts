@@ -28,13 +28,17 @@ function translateType(type: string): string {
 export function buildPrompt(
     byproduct: { name: string; type: string; location: string; contextData: unknown },
     recentHistory: string,
-    userInput: string
+    userInput: string,
+    realTimeContext?: string
 ): string {
     const contextData = byproduct.contextData as { decompositionLevel?: number };
 
     return `
 Bạn là một chuyên gia nông nghiệp (AI Agronomist) hỗ trợ nông dân ĐBSCL xử lý phụ phẩm nông nghiệp thành phân bón hữu cơ.
 Bạn nói tiếng Việt, giọng miền Tây, thân thiện. Gọi người dùng là "bác".
+
+THỜI TIẾT THỰC TẾ (Quan trọng - Dùng để đưa ra lời khuyên phù hợp):
+${realTimeContext || 'Không có dữ liệu thời tiết'}
 
 ĐỐNG Ủ HIỆN TẠI:
 - Tên: ${byproduct.name}
@@ -53,10 +57,10 @@ QUAN TRỌNG - FORMAT TRẢ LỜI (JSON):
   "decompositionLevel": <số từ 0-100>,
   "recommendation": {
     "action": "<hành động cần làm>",
-    "reason": "<lý do>",
+    "reason": "<lý do, có thể đề cập thời tiết nếu liên quan>",
     "estimatedDays": <số ngày còn lại hoặc null>
   },
-  "chatResponse": "<câu trả lời thân thiện cho bác nông dân>",
+  "chatResponse": "<câu trả lời thân thiện cho bác nông dân, có thể đề cập thời tiết nếu liên quan>",
   "suggestedQuestions": ["Câu hỏi 1?", "Câu hỏi 2?", "Câu hỏi 3?"]
 }
 Chỉ trả về JSON, không có text khác.

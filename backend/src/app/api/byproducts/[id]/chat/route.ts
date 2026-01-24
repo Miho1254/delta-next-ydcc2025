@@ -12,6 +12,7 @@ interface RouteParams {
 const ChatSchema = z.object({
     text: z.string().optional(),
     imageBase64: z.string().optional(),
+    contextString: z.string().optional(),
 });
 
 // POST /api/byproducts/[id]/chat - Chat with AI about byproduct
@@ -52,10 +53,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
         // Build prompt and call Gemini
         const userMessage = data.text || 'Xem ảnh mới của đống ủ';
+        const realTimeContext = data.contextString || 'Không có thông tin thời tiết';
         const prompt = buildPrompt(
             { name: byproduct.name, type: byproduct.type, location: byproduct.location, contextData: byproduct.contextData },
             recentHistory,
-            userMessage
+            userMessage,
+            realTimeContext
         );
 
         // Upload image if provided
