@@ -20,18 +20,27 @@ Nông dân ĐBSCL đối mặt với lượng lớn phụ phẩm nông nghiệp 
 
 ## ✨ Key Features (Tính năng chính)
 
-1.  📸 **Photo Diagnosis**: Chụp ảnh hiện trạng đống ủ, AI nhận diện loại phụ phẩm và đánh giá mức độ phân hủy.
-2.  🤖 **AI Chat Assistant**: Trợ lý ảo tư vấn kỹ thuật ủ, trả lời các câu hỏi thường gặp (tưới nước, đảo đống, bổ sung chế phẩm...).
-3.  🗣️ **Voice & Selection Mode**: Giao diện tối ưu cho người lớn tuổi - hỗ trợ nhập liệu bằng giọng nói và nút chọn nhanh.
-4.  📊 **Timeline Tracking**: Lưu trữ lịch sử chăm sóc để AI đưa ra lời khuyên chính xác theo ngữ cảnh.
-5.  🔐 **Phone Auth**: Đăng nhập đơn giản bằng số điện thoại.
+### 🎨 Giao diện Stitch Design (Mới 2025)
+- **Card-based Layout**: Mỗi đống ủ hiển thị bằng card lớn với ảnh nền, dễ nhìn dễ bấm.
+- **Giant Typography**: Font chữ siêu to (34px header), tối ưu cho nông dân lớn tuổi.
+- **Prescription Chat**: Lời khuyên AI hiển thị như "đơn thuốc", rõ ràng và trang trọng.
+- **Custom Camera UI**: Camera tích hợp với hướng dẫn bằng speech bubble.
+
+### 📱 Các màn hình chính
+1.  📸 **Chụp Hình Phụ Phẩm**: Camera toàn màn hình với hướng dẫn overlay + nút chụp siêu to.
+2.  🤖 **Bác Sĩ Cây Trồng Khuyên**: Lời khuyên AI dạng thẻ + nút "Xong rồi" và "Hỏi thêm".
+3.  🏠 **Việc Nhà Nông**: Danh sách đống ủ dạng card với status badge và FAB tạo mới.
+4.  🛒 **Chợ Nhà Nông**: Marketplace với search, filter chips, và product grid 2 cột.
+5.  🗣️ **Voice & Selection Mode**: Hỗ trợ nhập liệu bằng giọng nói và nút chọn nhanh.
+6.  📊 **Timeline Tracking**: Lưu trữ lịch sử chăm sóc để AI đưa ra lời khuyên theo ngữ cảnh.
 
 ## 🛠️ Tech Stack & Architecture
 
 ### Mobile App
 *   **Framework**: React Native (Expo Go) - *Fast iteration, no native build required.*
 *   **UI Library**: React Native Paper - *Material Design styled.*
-*   **Core Features**: Expo Camera, Expo Speech, Expo FileSystem.
+*   **Core Features**: expo-camera (Custom Camera UI), expo-speech (TTS), expo-image-picker.
+*   **Design System**: Stitch Design - Card-based layout, giant typography, farmer-friendly UX.
 
 ### Backend API
 *   **Framework**: Next.js 15 (App Router API Routes) - *Serverless ready.*
@@ -81,13 +90,18 @@ Quét mã QR bằng ứng dụng Expo Go trên điện thoại để trải nghi
 ## 📖 User Guide (Hướng dẫn sử dụng)
 
 1.  **Đăng nhập**: Nhập số điện thoại bất kỳ (VD: 0901234567) để bắt đầu.
-2.  **Tạo đống ủ mới**: Bấm nút `+`, chụp ảnh đống phụ phẩm và đặt tên.
-3.  **Nhận tư vấn**: Đọc lời khuyên từ AI về cách xử lý ban đầu.
-4.  **Chăm sóc định kỳ**:
-    *   Bấm vào đống ủ để xem chi tiết.
-    *   Bấm icon Micro 🎤 để hỏi: "Cần tưới nước không?"
-    *   Hoặc chọn các câu hỏi gợi ý sẵn.
-    *   Chụp ảnh cập nhật tiến độ khi cần thiết.
+2.  **Việc Nhà Nông**: Xem danh sách đống ủ dạng card lớn với ảnh nền.
+3.  **Tạo đống ủ mới**:
+    *   Bấm FAB (+) màu xanh lớn ở giữa màn hình.
+    *   Camera mở toàn màn hình với hướng dẫn "Chụp cái đống bác muốn xử lý".
+    *   Chọn từ thư viện hoặc chụp mới.
+    *   AI tự nhận diện loại phụ phẩm, bác xác nhận.
+4.  **Bác Sĩ Cây Trồng Khuyên**:
+    *   Bấm vào card đống ủ để xem chi tiết.
+    *   Đọc "Lời Khuyên" từ AI (có thể bấm nghe TTS).
+    *   Bấm "Tui làm xong rồi" khi hoàn thành.
+    *   Bấm "Hỏi thêm" để đặt câu hỏi mới.
+5.  **Chợ Nhà Nông**: Xem sản phẩm, tìm kiếm và gọi ngay cho người bán.
 
 ---
 *Built with ❤️ for YDCC 2025*
