@@ -1,7 +1,7 @@
 module.exports = {
     apps: [{
         name: 'agri-loop-api',
-        script: 'node_modules/next/dist/bin/next',
+        script: '../node_modules/next/dist/bin/next',
         args: 'start -p 2026',
         env: {
             NODE_ENV: 'production',
