@@ -15,13 +15,16 @@ bash <(curl -s https://raw.githubusercontent.com/Miho1254/delta-next-ydcc2025/ma
 ```
 
 ⚠️ **Lưu ý trong quá trình chạy script:**
-Script sẽ dừng lại và mở trình soạn thảo `nano` để bạn chỉnh sửa file `.env`. Hãy điền các thông tin sau:
-- `DATABASE_URL` (Supabase Transaction Pooler)
-- `JWT_SECRET`
-- `GEMINI_API_KEY`
-- `SUPABASE_URL` & `SECRET_KEY`
+Script sẽ dừng lại và mở trình soạn thảo `nano` để bạn chỉnh sửa file `.env`. Hãy điền các thông tin cần thiết.
 
-Sau khi sửa xong: Bấm `Ctrl+X` -> `Y` -> `Enter` để lưu và thoát.
+### Bước 2.1: Đăng ký khởi động cùng VPS (QUAN TRỌNG)
+Sau khi script chạy xong, để backend tự động chạy khi bạn khởi động lại VPS, hãy chạy lệnh sau:
+
+```bash
+pm2 startup
+# Sau đó COPY & PASTE dòng lệnh mà PM2 trả về (bắt đầu bằng sudo env PATH=...)
+pm2 save
+```
 
 ## 3. Cấu hình Domain & SSL (Apache2)
 
