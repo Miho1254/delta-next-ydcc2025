@@ -104,6 +104,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         if (data.imageBase64) {
             const fileName = `chat/${id}/${Date.now()}.jpg`;
             imageUrl = await uploadImage(data.imageBase64, fileName);
+
+            // FALLBACK: If Supabase Upload fails (invalid key), save Base64 directly to DB
+            if (!imageUrl) {
+                console.warn('Chat upload failed, falling back to Base64 storage');
+                imageUrl = data.imageBase64;
+            }
         }
 
         const analysis = await analyzeWithGemini(prompt, data.imageBase64);
