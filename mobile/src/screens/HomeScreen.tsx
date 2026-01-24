@@ -250,11 +250,11 @@ const styles = StyleSheet.create({
         marginBottom: 24,
         overflow: 'hidden',
         backgroundColor: '#fff',
-        elevation: 8, // Deep shadow
-        shadowColor: '#5bec13', // Green shadow tint
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
+        elevation: 6,
+        shadowColor: '#000', // Softer professional shadow
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
         position: 'relative',
     },
     cardBg: {

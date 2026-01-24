@@ -58,13 +58,7 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
         }
     };
 
-    const handleVoiceInput = () => {
-        Alert.alert('Bác nói gì đi?', '...', [
-            { text: 'Hủy', style: 'cancel' },
-            { text: 'Gửi "Cần làm gì tiếp?"', onPress: () => handleSend('Tôi cần làm gì tiếp theo?') },
-            { text: 'Gửi "Có cần tưới nước?"', onPress: () => handleSend('Đống ủ có cần tưới nước không?') }
-        ]);
-    };
+
 
     if (loading || !product) {
         return (

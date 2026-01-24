@@ -189,7 +189,12 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
                     {/* Bottom Controls */}
                     <View style={styles.controlsArea}>
                         {/* Shutter Button */}
-                        <TouchableOpacity style={styles.shutterBtnOuter} onPress={takePicture}>
+                        <TouchableOpacity
+                            style={styles.shutterBtnOuter}
+                            onPress={takePicture}
+                            activeOpacity={0.7}
+                            accessibilityLabel="Chụp ảnh"
+                        >
                             <View style={styles.shutterBtnInner} />
                         </TouchableOpacity>
 

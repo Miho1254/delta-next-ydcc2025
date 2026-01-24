@@ -132,7 +132,11 @@ export default function MarketScreen({ navigation }: MarketScreenProps) {
 
                 <View style={styles.priceRow}>
                     <Text style={styles.price}>{item.price}</Text>
-                    <TouchableOpacity style={styles.callBtn} onPress={() => Alert.alert("Gọi ngay", `Đang gọi cho ${item.seller}...`)}>
+                    <TouchableOpacity
+                        style={styles.callBtn}
+                        onPress={() => Alert.alert("Gọi ngay", `Đang gọi cho ${item.seller}...`)}
+                        activeOpacity={0.7}
+                    >
                         <Text style={{ fontSize: 18 }}>📞</Text>
                         <Text style={styles.callBtnText}>Gọi</Text>
                     </TouchableOpacity>
