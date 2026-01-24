@@ -35,6 +35,18 @@ interface RichContextData {
         optimalConditions: boolean;
         warnings: string[];
     };
+    gps: DetailedLocation | null;
+}
+
+// Detailed GPS location data for precise localization
+interface DetailedLocation {
+    latitude: number;
+    longitude: number;
+    province: string;       // Tỉnh
+    district: string;       // Huyện/Quận
+    commune: string;        // Xã/Phường
+    street: string;         // Đường/Ấp
+    fullAddress: string;    // Full formatted address
 }
 
 // Weather code to Vietnamese description
@@ -175,20 +187,73 @@ async function fetchWeatherWithForecast(latitude: number, longitude: number): Pr
     }
 }
 
-// Reverse geocode to get city name
-async function reverseGeocode(latitude: number, longitude: number): Promise<string> {
+// Reverse geocode to get detailed location
+interface GeocodedLocation {
+    displayName: string;
+    detailed: DetailedLocation;
+}
+
+async function reverseGeocode(latitude: number, longitude: number): Promise<GeocodedLocation> {
     try {
         const results = await Location.reverseGeocodeAsync({ latitude, longitude });
         if (results.length > 0) {
             const loc = results[0];
-            const city = loc.city || loc.subregion || loc.region || 'Không xác định';
-            const district = loc.district || loc.name || '';
-            return district ? `${district}, ${city}` : city;
+
+            // Extract all location components
+            const province = loc.region || loc.subregion || 'Không xác định';
+            const district = loc.city || loc.subregion || '';
+            const commune = loc.district || '';
+            const street = loc.street || loc.name || '';
+
+            // Build full address
+            const addressParts = [street, commune, district, province].filter(Boolean);
+            const fullAddress = addressParts.join(', ');
+
+            // Simple display name
+            const displayName = commune && district
+                ? `${commune}, ${district}`
+                : district || province;
+
+            return {
+                displayName,
+                detailed: {
+                    latitude,
+                    longitude,
+                    province,
+                    district,
+                    commune,
+                    street,
+                    fullAddress,
+                },
+            };
         }
-        return 'Không xác định';
+
+        return {
+            displayName: 'Không xác định',
+            detailed: {
+                latitude,
+                longitude,
+                province: 'Không xác định',
+                district: '',
+                commune: '',
+                street: '',
+                fullAddress: `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+            },
+        };
     } catch (error) {
         console.error('Geocode error:', error);
-        return 'Không xác định';
+        return {
+            displayName: 'Không xác định',
+            detailed: {
+                latitude,
+                longitude,
+                province: 'Lỗi định vị',
+                district: '',
+                commune: '',
+                street: '',
+                fullAddress: `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+            },
+        };
     }
 }
 
@@ -242,6 +307,7 @@ export async function getContextForAI(): Promise<RichContextData> {
             optimalConditions: true,
             warnings: [],
         },
+        gps: null,
     };
 
     try {
@@ -259,13 +325,13 @@ export async function getContextForAI(): Promise<RichContextData> {
         const { latitude, longitude } = location.coords;
 
         // Fetch location name and weather in parallel
-        const [locationName, forecast] = await Promise.all([
+        const [geocodedLocation, forecast] = await Promise.all([
             reverseGeocode(latitude, longitude),
             fetchWeatherWithForecast(latitude, longitude),
         ]);
 
-        // Detect region
-        const regionProfile = detectRegion(locationName);
+        // Detect region from display name
+        const regionProfile = detectRegion(geocodedLocation.displayName);
 
         // Build weather string
         let weatherString = 'Không có dữ liệu';
@@ -292,8 +358,8 @@ export async function getContextForAI(): Promise<RichContextData> {
         // Analyze composting conditions
         const compostingAnalysis = analyzeCompostingConditions(forecast);
 
-        // Build full context string for Gemini
-        let fullContext = `📍 Vị trí: ${locationName} | 🌡️ ${weatherString}`;
+        // Build full context string for Gemini with detailed GPS
+        let fullContext = `📍 Vị trí: ${geocodedLocation.detailed.fullAddress} | 🌡️ ${weatherString}`;
 
         if (regionProfile) {
             fullContext += ` | 🗺️ Vùng: ${regionProfile.name} (${regionProfile.climateZone})`;
@@ -309,8 +375,11 @@ export async function getContextForAI(): Promise<RichContextData> {
             fullContext += ` | CẢNH BÁO: ${compostingAnalysis.warnings.join('; ')}`;
         }
 
+        // Add GPS coordinates for precision
+        fullContext += ` | GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+
         return {
-            location: locationName,
+            location: geocodedLocation.displayName,
             weather: weatherString,
             fullContext,
             regionProfile,
@@ -319,6 +388,7 @@ export async function getContextForAI(): Promise<RichContextData> {
                 tempAdvice,
             },
             composting: compostingAnalysis,
+            gps: geocodedLocation.detailed,
         };
     } catch (error) {
         console.error('Context service error:', error);
@@ -333,5 +403,4 @@ export async function getContextString(): Promise<string> {
 }
 
 // Export types for use in other files
-export type { RichContextData, RegionProfile, WeatherForecast };
-
+export type { RichContextData, RegionProfile, WeatherForecast, DetailedLocation };

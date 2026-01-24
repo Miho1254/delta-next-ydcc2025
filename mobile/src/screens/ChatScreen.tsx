@@ -50,6 +50,15 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
                 rainAlert: context.forecast?.rainAlert,
                 tempAdvice: context.forecast?.tempAdvice,
                 warnings: context.composting?.warnings,
+                // GPS location data for precise localization
+                gps: context.gps ? {
+                    latitude: context.gps.latitude,
+                    longitude: context.gps.longitude,
+                    province: context.gps.province,
+                    district: context.gps.district,
+                    commune: context.gps.commune,
+                    fullAddress: context.gps.fullAddress,
+                } : undefined,
             };
 
             const payload = {

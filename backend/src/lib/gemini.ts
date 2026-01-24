@@ -29,6 +29,29 @@ export interface RichContext {
     warnings?: string[];
     daysSinceStart?: number;
     totalInteractions?: number;
+    gps?: {
+        latitude: number;
+        longitude: number;
+        province: string;
+        district: string;
+        commune: string;
+        fullAddress: string;
+    };
+}
+
+// Build GPS location section for precise localization
+function buildGPSLocation(richContext: RichContext): string {
+    if (!richContext.gps) {
+        return '';
+    }
+
+    return `
+PRECISE LOCATION (GPS):
+- Tỉnh/Thành phố: ${richContext.gps.province}
+- Huyện/Quận: ${richContext.gps.district || 'Không rõ'}
+- Xã/Phường: ${richContext.gps.commune || 'Không rõ'}
+- Địa chỉ đầy đủ: ${richContext.gps.fullAddress}
+- Tọa độ GPS: ${richContext.gps.latitude.toFixed(4)}, ${richContext.gps.longitude.toFixed(4)}`;
 }
 
 // Build region-aware advice section
@@ -107,6 +130,7 @@ export function buildPrompt(
     // Build optional sections
     const regionAdvice = richContext ? buildRegionAdvice(richContext) : '';
     const weatherWarnings = richContext ? buildWeatherWarnings(richContext) : '';
+    const gpsLocation = richContext ? buildGPSLocation(richContext) : '';
     const learningContext = buildLearningContext(
         contextData.daysSinceStart || richContext?.daysSinceStart,
         contextData.totalInteractions || richContext?.totalInteractions
@@ -115,13 +139,15 @@ export function buildPrompt(
     return `
 ROLE: You are an expert in organic recycling for ALL types of agricultural waste (AI Agronomist).
 You speak Vietnamese, Miền Tây accent, very friendly. Address the user as "bác".
-You provide SPECIFIC, actionable advice based on location, weather, and composting stage.
+You provide SPECIFIC, actionable advice based on PRECISE location, weather, and composting stage.
+Use local knowledge when you have province/district information.
 
 CONTEXT:
 - Object: ${byproduct.name} (Identified as: ${byproduct.type})
 - Location: ${byproduct.location}
 - Weather: ${realTimeContext || richContext?.weather || 'Unknown'}
 - Decomposition: ${contextData.decompositionLevel || 0}%
+${gpsLocation}
 ${regionAdvice}
 ${weatherWarnings}
 ${learningContext}

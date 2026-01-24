@@ -23,6 +23,14 @@ const ChatSchema = z.object({
         rainAlert: z.string().nullable().optional(),
         tempAdvice: z.string().optional(),
         warnings: z.array(z.string()).optional(),
+        gps: z.object({
+            latitude: z.number(),
+            longitude: z.number(),
+            province: z.string(),
+            district: z.string(),
+            commune: z.string(),
+            fullAddress: z.string(),
+        }).optional(),
     }).optional(),
 });
 
