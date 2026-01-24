@@ -3,7 +3,6 @@ module.exports = {
         name: 'agri-loop-api',
         script: 'npm',
         args: 'start',
-        cwd: '/var/www/agri-loop/backend',
         env: {
             NODE_ENV: 'production',
             PORT: 2026
