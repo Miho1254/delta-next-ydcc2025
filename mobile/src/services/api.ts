@@ -81,7 +81,22 @@ class ApiClient {
         return response.identifiedName;
     }
 
-    async chat(byproductId: string, data: { text?: string; imageBase64?: string; contextString?: string }) {
+    async chat(byproductId: string, data: {
+        text?: string;
+        imageBase64?: string;
+        contextString?: string;
+        richContext?: {
+            location: string;
+            weather: string;
+            regionName?: string;
+            climateZone?: string;
+            soilType?: string;
+            regionTips?: string[];
+            rainAlert?: string | null;
+            tempAdvice?: string;
+            warnings?: string[];
+        };
+    }) {
         return this.request<{ analysis: AIAnalysis; timeline: TimelineEntry[] }>(`/byproducts/${byproductId}/chat`, {
             method: 'POST',
             body: JSON.stringify(data),

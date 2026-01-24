@@ -38,9 +38,24 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
         setSending(true);
         try {
             const context = await getContextForAI();
+
+            // Build rich context for smarter AI prompts
+            const richContext = {
+                location: context.location,
+                weather: context.weather,
+                regionName: context.regionProfile?.name,
+                climateZone: context.regionProfile?.climateZone,
+                soilType: context.regionProfile?.soilType,
+                regionTips: context.regionProfile?.compostingTips,
+                rainAlert: context.forecast?.rainAlert,
+                tempAdvice: context.forecast?.tempAdvice,
+                warnings: context.composting?.warnings,
+            };
+
             const payload = {
                 text: text,
                 contextString: context.fullContext,
+                richContext,
             };
             const response = await api.chat(byproductId, payload);
             setTimeline(response.timeline); // API returns updated timeline

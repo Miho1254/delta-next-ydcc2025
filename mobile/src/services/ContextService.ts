@@ -7,10 +7,34 @@ interface WeatherData {
     weatherCode: number;
 }
 
-interface ContextData {
+interface WeatherForecast {
+    current: WeatherData;
+    rainChance24h: number;
+    maxTemp24h: number;
+    minTemp24h: number;
+}
+
+interface RegionProfile {
+    name: string;
+    climateZone: string;
+    soilType: string;
+    commonByproducts: string[];
+    compostingTips: string[];
+}
+
+interface RichContextData {
     location: string;
     weather: string;
     fullContext: string;
+    regionProfile: RegionProfile | null;
+    forecast: {
+        rainAlert: string | null;
+        tempAdvice: string;
+    };
+    composting: {
+        optimalConditions: boolean;
+        warnings: string[];
+    };
 }
 
 // Weather code to Vietnamese description
@@ -41,27 +65,107 @@ function getWeatherDescription(code: number): string {
     return weatherCodes[code] || 'Không xác định';
 }
 
-// Get temperature recommendation for composting
-function getTemperatureAdvice(temp: number): string {
-    if (temp >= 35) return '⚠️ Nắng nóng - Cần che phủ đống ủ';
-    if (temp >= 28) return '☀️ Nhiệt độ lý tưởng cho ủ phân';
-    if (temp >= 20) return '🌤️ Nhiệt độ tốt';
-    return '❄️ Trời lạnh - Quá trình phân hủy chậm';
+// Region profiles for Vietnam
+const REGION_PROFILES: Record<string, RegionProfile> = {
+    'ĐBSCL': {
+        name: 'Đồng bằng sông Cửu Long',
+        climateZone: 'Nhiệt đới gió mùa',
+        soilType: 'Phù sa - giữ ẩm tốt',
+        commonByproducts: ['Rơm rạ', 'Vỏ trấu', 'Lục bình', 'Bã mía'],
+        compostingTips: [
+            'Nên ủ trong mùa khô (tháng 11-4)',
+            'Che phủ kỹ khi mưa lớn',
+            'Tận dụng lục bình làm nguồn đạm',
+        ],
+    },
+    'Tây Nguyên': {
+        name: 'Tây Nguyên',
+        climateZone: 'Cao nguyên nhiệt đới',
+        soilType: 'Đất đỏ bazan - giàu khoáng',
+        commonByproducts: ['Vỏ cà phê', 'Bã cà phê', 'Vỏ sầu riêng', 'Lá cao su'],
+        compostingTips: [
+            'Vỏ cà phê cần ủ riêng (chứa caffeine)',
+            'Trộn thêm phân bò để cân bằng C/N',
+            'Nhiệt độ cao nguyên lý tưởng cho ủ phân',
+        ],
+    },
+    'Đông Nam Bộ': {
+        name: 'Đông Nam Bộ',
+        climateZone: 'Nhiệt đới gió mùa',
+        soilType: 'Đất xám - cần bón phân',
+        commonByproducts: ['Vỏ điều', 'Lá cao su', 'Rơm rạ', 'Xơ dừa'],
+        compostingTips: [
+            'Xơ dừa giữ ẩm tốt, trộn 30% vào đống ủ',
+            'Vỏ điều cần nghiền nhỏ trước khi ủ',
+        ],
+    },
+    'Bắc Bộ': {
+        name: 'Đồng bằng Bắc Bộ',
+        climateZone: 'Cận nhiệt đới gió mùa',
+        soilType: 'Phù sa sông Hồng',
+        commonByproducts: ['Rơm rạ', 'Thân ngô', 'Vỏ lạc', 'Bã đậu'],
+        compostingTips: [
+            'Mùa đông lạnh - ủ trong nhà kín hoặc che phủ',
+            'Tận dụng nhiệt từ phân chuồng',
+        ],
+    },
+};
+
+// Detect region from location name
+function detectRegion(locationName: string): RegionProfile | null {
+    const loc = locationName.toLowerCase();
+
+    // ĐBSCL keywords
+    if (['cần thơ', 'an giang', 'đồng tháp', 'vĩnh long', 'bến tre', 'trà vinh', 'sóc trăng', 'bạc liêu', 'cà mau', 'kiên giang', 'hậu giang', 'long an', 'tiền giang'].some(k => loc.includes(k))) {
+        return REGION_PROFILES['ĐBSCL'];
+    }
+
+    // Tây Nguyên keywords
+    if (['đắk lắk', 'đắk nông', 'gia lai', 'kon tum', 'lâm đồng', 'buôn ma thuột', 'pleiku', 'đà lạt'].some(k => loc.includes(k))) {
+        return REGION_PROFILES['Tây Nguyên'];
+    }
+
+    // Đông Nam Bộ
+    if (['bình dương', 'bình phước', 'đồng nai', 'tây ninh', 'bà rịa', 'vũng tàu', 'hồ chí minh'].some(k => loc.includes(k))) {
+        return REGION_PROFILES['Đông Nam Bộ'];
+    }
+
+    // Bắc Bộ
+    if (['hà nội', 'hải phòng', 'thái bình', 'nam định', 'hải dương', 'hưng yên', 'bắc ninh', 'vĩnh phúc'].some(k => loc.includes(k))) {
+        return REGION_PROFILES['Bắc Bộ'];
+    }
+
+    return null;
 }
 
-// Fetch weather from Open-Meteo (Free, No API Key)
-async function fetchWeather(latitude: number, longitude: number): Promise<WeatherData | null> {
+// Get temperature recommendation for composting
+function getTemperatureAdvice(temp: number): string {
+    if (temp >= 38) return '🔥 Nắng gắt - Che phủ đống ủ, tưới thêm nước';
+    if (temp >= 35) return '⚠️ Nắng nóng - Cần che phủ đống ủ';
+    if (temp >= 28) return '☀️ Nhiệt độ lý tưởng cho ủ phân (28-35°C)';
+    if (temp >= 20) return '🌤️ Nhiệt độ tốt - Quá trình phân hủy ổn định';
+    if (temp >= 15) return '🌡️ Hơi lạnh - Phân hủy chậm hơn bình thường';
+    return '❄️ Trời lạnh - Quá trình phân hủy rất chậm, cần che phủ giữ nhiệt';
+}
+
+// Fetch weather with forecast from Open-Meteo
+async function fetchWeatherWithForecast(latitude: number, longitude: number): Promise<WeatherForecast | null> {
     try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,rain,weather_code&timezone=auto`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,rain,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=2`;
         const response = await fetch(url);
         const data = await response.json();
 
-        if (data.current) {
+        if (data.current && data.daily) {
             return {
-                temperature: data.current.temperature_2m,
-                humidity: data.current.relative_humidity_2m,
-                rain: data.current.rain,
-                weatherCode: data.current.weather_code,
+                current: {
+                    temperature: data.current.temperature_2m,
+                    humidity: data.current.relative_humidity_2m,
+                    rain: data.current.rain,
+                    weatherCode: data.current.weather_code,
+                },
+                rainChance24h: data.daily.precipitation_probability_max?.[0] || 0,
+                maxTemp24h: data.daily.temperature_2m_max?.[0] || data.current.temperature_2m,
+                minTemp24h: data.daily.temperature_2m_min?.[0] || data.current.temperature_2m,
             };
         }
         return null;
@@ -88,12 +192,56 @@ async function reverseGeocode(latitude: number, longitude: number): Promise<stri
     }
 }
 
-// Main function: Get full context for AI
-export async function getContextForAI(): Promise<ContextData> {
-    const defaultContext: ContextData = {
+// Analyze composting conditions
+function analyzeCompostingConditions(forecast: WeatherForecast | null): { optimalConditions: boolean; warnings: string[] } {
+    const warnings: string[] = [];
+    let optimal = true;
+
+    if (!forecast) {
+        return { optimalConditions: true, warnings: [] };
+    }
+
+    // Rain warning
+    if (forecast.rainChance24h >= 70) {
+        warnings.push(`🌧️ Khả năng mưa ${forecast.rainChance24h}% trong 24h - Che phủ đống ủ!`);
+        optimal = false;
+    } else if (forecast.rainChance24h >= 40) {
+        warnings.push(`🌦️ Có thể mưa ${forecast.rainChance24h}% - Chuẩn bị bạt che`);
+    }
+
+    // Temperature warnings
+    if (forecast.current.temperature >= 38) {
+        warnings.push('🔥 Nhiệt độ cao - Tưới nước giữ ẩm cho đống ủ');
+        optimal = false;
+    } else if (forecast.current.temperature < 15) {
+        warnings.push('❄️ Nhiệt độ thấp - Quá trình phân hủy chậm');
+    }
+
+    // Humidity warnings
+    if (forecast.current.humidity < 40) {
+        warnings.push('💨 Độ ẩm thấp - Cần tưới nước cho đống ủ');
+    } else if (forecast.current.humidity > 85) {
+        warnings.push('💧 Độ ẩm cao - Đảo đống ủ để thoáng khí');
+    }
+
+    return { optimalConditions: optimal, warnings };
+}
+
+// Main function: Get RICH context for AI
+export async function getContextForAI(): Promise<RichContextData> {
+    const defaultContext: RichContextData = {
         location: 'Không xác định',
         weather: 'Không có dữ liệu',
         fullContext: 'Không có thông tin bổ sung',
+        regionProfile: null,
+        forecast: {
+            rainAlert: null,
+            tempAdvice: 'Không có dữ liệu nhiệt độ',
+        },
+        composting: {
+            optimalConditions: true,
+            warnings: [],
+        },
     };
 
     try {
@@ -111,32 +259,66 @@ export async function getContextForAI(): Promise<ContextData> {
         const { latitude, longitude } = location.coords;
 
         // Fetch location name and weather in parallel
-        const [locationName, weatherData] = await Promise.all([
+        const [locationName, forecast] = await Promise.all([
             reverseGeocode(latitude, longitude),
-            fetchWeather(latitude, longitude),
+            fetchWeatherWithForecast(latitude, longitude),
         ]);
+
+        // Detect region
+        const regionProfile = detectRegion(locationName);
 
         // Build weather string
         let weatherString = 'Không có dữ liệu';
-        let tempAdvice = '';
+        let tempAdvice = 'Không có dữ liệu nhiệt độ';
+        let rainAlert: string | null = null;
 
-        if (weatherData) {
-            const weatherDesc = getWeatherDescription(weatherData.weatherCode);
-            tempAdvice = getTemperatureAdvice(weatherData.temperature);
-            weatherString = `${weatherData.temperature}°C (${weatherDesc}) | Độ ẩm: ${weatherData.humidity}%`;
+        if (forecast) {
+            const weatherDesc = getWeatherDescription(forecast.current.weatherCode);
+            tempAdvice = getTemperatureAdvice(forecast.current.temperature);
+            weatherString = `${forecast.current.temperature}°C (${weatherDesc}) | Độ ẩm: ${forecast.current.humidity}%`;
 
-            if (weatherData.rain > 0) {
-                weatherString += ` | Mưa: ${weatherData.rain}mm`;
+            if (forecast.current.rain > 0) {
+                weatherString += ` | Mưa: ${forecast.current.rain}mm`;
+            }
+
+            // Add 24h forecast
+            weatherString += ` | Dự báo: ${forecast.minTemp24h}-${forecast.maxTemp24h}°C`;
+
+            if (forecast.rainChance24h >= 50) {
+                rainAlert = `⚠️ Khả năng mưa ${forecast.rainChance24h}% trong 24h tới`;
             }
         }
 
+        // Analyze composting conditions
+        const compostingAnalysis = analyzeCompostingConditions(forecast);
+
         // Build full context string for Gemini
-        const fullContext = `📍 Vị trí: ${locationName} | 🌡️ ${weatherString} | ${tempAdvice}`;
+        let fullContext = `📍 Vị trí: ${locationName} | 🌡️ ${weatherString}`;
+
+        if (regionProfile) {
+            fullContext += ` | 🗺️ Vùng: ${regionProfile.name} (${regionProfile.climateZone})`;
+        }
+
+        fullContext += ` | ${tempAdvice}`;
+
+        if (rainAlert) {
+            fullContext += ` | ${rainAlert}`;
+        }
+
+        if (compostingAnalysis.warnings.length > 0) {
+            fullContext += ` | CẢNH BÁO: ${compostingAnalysis.warnings.join('; ')}`;
+        }
 
         return {
             location: locationName,
             weather: weatherString,
             fullContext,
+            regionProfile,
+            forecast: {
+                rainAlert,
+                tempAdvice,
+            },
+            composting: compostingAnalysis,
         };
     } catch (error) {
         console.error('Context service error:', error);
@@ -149,3 +331,7 @@ export async function getContextString(): Promise<string> {
     const context = await getContextForAI();
     return context.fullContext;
 }
+
+// Export types for use in other files
+export type { RichContextData, RegionProfile, WeatherForecast };
+

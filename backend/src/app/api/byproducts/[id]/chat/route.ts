@@ -13,6 +13,17 @@ const ChatSchema = z.object({
     text: z.string().optional(),
     imageBase64: z.string().optional(),
     contextString: z.string().optional(),
+    richContext: z.object({
+        location: z.string(),
+        weather: z.string(),
+        regionName: z.string().optional(),
+        climateZone: z.string().optional(),
+        soilType: z.string().optional(),
+        regionTips: z.array(z.string()).optional(),
+        rainAlert: z.string().nullable().optional(),
+        tempAdvice: z.string().optional(),
+        warnings: z.array(z.string()).optional(),
+    }).optional(),
 });
 
 // POST /api/byproducts/[id]/chat - Chat with AI about byproduct
@@ -51,6 +62,19 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
             .map((e: { role: string; content: string }) => `${e.role}: ${e.content}`)
             .join('\n');
 
+        // Calculate learning metrics
+        const daysSinceStart = byproduct.createdAt
+            ? Math.floor((Date.now() - new Date(byproduct.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+            : 0;
+        const totalInteractions = recentTimeline.length;
+
+        // Build rich context for smarter prompts
+        const richContextForPrompt = data.richContext ? {
+            ...data.richContext,
+            daysSinceStart,
+            totalInteractions,
+        } : undefined;
+
         // Build prompt and call Gemini
         const userMessage = data.text || 'Xem ảnh mới của đống ủ';
         const realTimeContext = data.contextString || 'Không có thông tin thời tiết';
@@ -58,7 +82,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
             { name: byproduct.name, type: byproduct.type, location: byproduct.location, contextData: byproduct.contextData },
             recentHistory,
             userMessage,
-            realTimeContext
+            realTimeContext,
+            richContextForPrompt
         );
 
         // Upload image if provided
@@ -95,7 +120,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
             },
         });
 
-        // Update byproduct context
+        // Update byproduct context with learning metrics
         await prisma.byProduct.update({
             where: { id },
             data: {
@@ -103,6 +128,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
                     ...(byproduct.contextData as object),
                     decompositionLevel: analysis.decompositionLevel,
                     currentCondition: analysis.recommendation.action,
+                    daysSinceStart,
+                    totalInteractions: totalInteractions + 2, // +2 for this exchange
+                    lastInteraction: Date.now(),
                 },
                 status: analysis.decompositionLevel >= 80 ? 'ready_to_harvest' : 'processing',
             },
