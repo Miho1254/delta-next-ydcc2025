@@ -119,12 +119,37 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             </TouchableOpacity>
         );
     };
+    // Skeleton Card Component
+    const SkeletonCard = () => (
+        <View style={styles.skeletonCard}>
+            <View style={styles.skeletonImage} />
+            <View style={styles.skeletonContent}>
+                <View style={[styles.skeletonLine, { width: '60%' }]} />
+                <View style={[styles.skeletonLine, { width: '40%', marginTop: 8 }]} />
+            </View>
+        </View>
+    );
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={FarmerTheme.colors.primary} />
-                <Text style={styles.loadingText}>Đang tải việc...</Text>
+            <View style={styles.container}>
+                <StatusBar barStyle="dark-content" backgroundColor={FarmerTheme.colors.background} />
+                {/* Header */}
+                <View style={styles.header}>
+                    <View>
+                        <Text style={styles.headerTitle}>Việc Nhà Nông</Text>
+                        <Text style={styles.headerSubtitle}>Đang tải...</Text>
+                    </View>
+                    <View style={[styles.marketBtn, { opacity: 0.5 }]}>
+                        <Text style={{ fontSize: 28 }}>🛒</Text>
+                    </View>
+                </View>
+                {/* Skeleton Cards */}
+                <View style={{ padding: 20 }}>
+                    <SkeletonCard />
+                    <SkeletonCard />
+                    <SkeletonCard />
+                </View>
             </View>
         );
     }
@@ -328,5 +353,26 @@ const styles = StyleSheet.create({
         color: '#162210',
         fontWeight: '300',
         marginTop: -4,
+    },
+
+    // Skeleton Loading
+    skeletonCard: {
+        height: 200,
+        borderRadius: FarmerTheme.roundness,
+        marginBottom: 24,
+        backgroundColor: '#e8ebe8',
+        overflow: 'hidden',
+    },
+    skeletonImage: {
+        height: 120,
+        backgroundColor: '#dde0dd',
+    },
+    skeletonContent: {
+        padding: 16,
+    },
+    skeletonLine: {
+        height: 20,
+        backgroundColor: '#d0d4d0',
+        borderRadius: 10,
     },
 });

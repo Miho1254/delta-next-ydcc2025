@@ -54,12 +54,12 @@ export default function MarketScreen({ navigation }: MarketScreenProps) {
                     <Text style={{ fontSize: 24 }}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Chợ Nhà Nông</Text>
-                <View style={styles.cartBtnContainer}>
+                <TouchableOpacity
+                    style={styles.cartBtnContainer}
+                    accessibilityLabel="Giỏ hàng (sắp ra mắt)"
+                >
                     <Text style={{ fontSize: 28 }}>🛒</Text>
-                    <View style={styles.cartBadge}>
-                        <Text style={styles.cartBadgeText}>2</Text>
-                    </View>
-                </View>
+                </TouchableOpacity>
             </View>
 
             {/* Search Bar */}
