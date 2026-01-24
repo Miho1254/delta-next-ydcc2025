@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, Title, HelperText } from 'react-native-paper';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { TextInput, Button, Text, Title, HelperText, Surface } from 'react-native-paper';
 import { api } from '../services/api';
 
 interface LoginScreenProps {
@@ -14,8 +14,8 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     const [error, setError] = useState('');
 
     const handleLogin = async () => {
-        if (!phone || phone.length !== 10) {
-            setError('Số điện thoại phải có 10 số');
+        if (!phone || phone.length !== 10 || !phone.startsWith('0')) {
+            setError('Số điện thoại phải bắt đầu bằng 0 và có 10 số');
             return;
         }
 
@@ -26,7 +26,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             await api.login(phone, name || undefined);
             onLoginSuccess();
         } catch (err: unknown) {
-            setError((err as Error).message || 'Đăng nhập thất bại');
+            setError((err as Error).message || 'Đăng nhập thất bại, vui lòng thử lại');
         } finally {
             setLoading(false);
         }
@@ -38,41 +38,62 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             style={styles.container}
         >
             <View style={styles.content}>
-                <Title style={styles.title}>🌱 Agri-Loop</Title>
-                <Text style={styles.subtitle}>Trợ lý AI ủ phân hữu cơ</Text>
+                {/* Logo Area */}
+                <View style={styles.logoContainer}>
+                    <Text style={styles.logoEmoji}>🌱</Text>
+                    <Title style={styles.title}>Agri-Loop</Title>
+                    <Text style={styles.subtitle}>Trợ lý AI ủ phân hữu cơ</Text>
+                    <Text style={styles.tagline}>Chuyển đổi phụ phẩm thành tài nguyên</Text>
+                </View>
 
-                <TextInput
-                    label="Số điện thoại"
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                    maxLength={10}
-                    style={styles.input}
-                    mode="outlined"
-                    left={<TextInput.Icon icon="phone" />}
-                />
+                {/* Form */}
+                <Surface style={styles.formContainer} elevation={2}>
+                    <TextInput
+                        label="Số điện thoại"
+                        value={phone}
+                        onChangeText={(text) => {
+                            setPhone(text.replace(/[^0-9]/g, ''));
+                            setError('');
+                        }}
+                        keyboardType="phone-pad"
+                        maxLength={10}
+                        style={styles.input}
+                        mode="outlined"
+                        left={<TextInput.Icon icon="phone" />}
+                        outlineColor="#2e7d32"
+                        activeOutlineColor="#2e7d32"
+                    />
 
-                <TextInput
-                    label="Tên của bác (tuỳ chọn)"
-                    value={name}
-                    onChangeText={setName}
-                    style={styles.input}
-                    mode="outlined"
-                    left={<TextInput.Icon icon="account" />}
-                />
+                    <TextInput
+                        label="Tên của bác (tuỳ chọn)"
+                        value={name}
+                        onChangeText={setName}
+                        style={styles.input}
+                        mode="outlined"
+                        left={<TextInput.Icon icon="account" />}
+                        outlineColor="#2e7d32"
+                        activeOutlineColor="#2e7d32"
+                    />
 
-                {error ? <HelperText type="error">{error}</HelperText> : null}
+                    {error ? <HelperText type="error" style={styles.error}>{error}</HelperText> : null}
 
-                <Button
-                    mode="contained"
-                    onPress={handleLogin}
-                    loading={loading}
-                    disabled={loading}
-                    style={styles.button}
-                    contentStyle={styles.buttonContent}
-                >
-                    Bắt đầu
-                </Button>
+                    <Button
+                        mode="contained"
+                        onPress={handleLogin}
+                        loading={loading}
+                        disabled={loading || phone.length < 10}
+                        style={styles.button}
+                        contentStyle={styles.buttonContent}
+                        labelStyle={styles.buttonLabel}
+                    >
+                        {loading ? 'Đang xử lý...' : 'Bắt đầu ngay'}
+                    </Button>
+                </Surface>
+
+                {/* Footer */}
+                <Text style={styles.footer}>
+                    YDCC 2025 - Youth Digital Citizen Challenge
+                </Text>
             </View>
         </KeyboardAvoidingView>
     );
@@ -81,33 +102,65 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#e8f5e9',
     },
     content: {
         flex: 1,
         justifyContent: 'center',
         padding: 24,
     },
-    title: {
-        fontSize: 32,
-        textAlign: 'center',
+    logoContainer: {
+        alignItems: 'center',
+        marginBottom: 32,
+    },
+    logoEmoji: {
+        fontSize: 64,
         marginBottom: 8,
+    },
+    title: {
+        fontSize: 36,
+        fontWeight: 'bold',
         color: '#2e7d32',
+        marginBottom: 4,
     },
     subtitle: {
-        fontSize: 16,
-        textAlign: 'center',
-        marginBottom: 32,
+        fontSize: 18,
+        color: '#388e3c',
+        marginBottom: 4,
+    },
+    tagline: {
+        fontSize: 14,
         color: '#666',
+        fontStyle: 'italic',
+    },
+    formContainer: {
+        padding: 24,
+        borderRadius: 16,
+        backgroundColor: 'white',
     },
     input: {
         marginBottom: 16,
+        backgroundColor: 'white',
+    },
+    error: {
+        marginBottom: 8,
     },
     button: {
-        marginTop: 16,
+        marginTop: 8,
         backgroundColor: '#2e7d32',
+        borderRadius: 8,
     },
     buttonContent: {
         paddingVertical: 8,
+    },
+    buttonLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    footer: {
+        textAlign: 'center',
+        marginTop: 32,
+        color: '#666',
+        fontSize: 12,
     },
 });
