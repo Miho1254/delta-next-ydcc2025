@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String      @id @default(uuid())
+  phone     String      @unique
+  name      String
+  region    String      @default("ĐBSCL")
+  createdAt DateTime    @default(now())
+
+  byproducts ByProduct[]
+
+  @@index([phone])
+  @@map("users")
+}
+
+model ByProduct {
+  id           String            @id @default(uuid())
+  userId       String
+  name         String
+  type         ByProductType     @default(unknown)
+  status       ByProductStatus   @default(new_product)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  // Simple JSON context
+  location      String            // "lat,lng"
+  startImageUrl String
+  contextData   Json              // Store everything as JSON
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeline     TimelineEntry[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("byproducts")
+}
+
+model TimelineEntry {
+  id          String         @id @default(uuid())
+  byproductId String
+  timestamp   BigInt         // Unix ms
+  role        String         // 'user' | 'model'
+  content     String         @db.Text
+  metadata    Json?          // Optional extra data
+
+  byproduct   ByProduct      @relation(fields: [byproductId], references: [id], onDelete: Cascade)
+
+  @@index([byproductId, timestamp])
+  @@map("timeline_entries")
+}
+
+enum ByProductType {
+  straw
+  shrimp_shell
+  hyacinth
+  unknown
+}
+
+enum ByProductStatus {
+  new_product
+  processing
+  ready_to_harvest
+}
