@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
-import { TextInput, Button, Text, Title, HelperText, Surface } from 'react-native-paper';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, Alert, Dimensions, ImageBackground } from 'react-native';
+import { TextInput, Button } from 'react-native-paper';
 import { api } from '../services/api';
+import { FarmerTheme } from '../theme';
+import { AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Text } from 'react-native-paper';
 
 interface LoginScreenProps {
     onLoginSuccess: () => void;
 }
+
+const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     const [phone, setPhone] = useState('');
@@ -15,7 +20,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
 
     const handleLogin = async () => {
         if (!phone || phone.length !== 10 || !phone.startsWith('0')) {
-            setError('Số điện thoại phải bắt đầu bằng 0 và có 10 số');
+            setError('Số điện thoại không hợp lệ');
             return;
         }
 
@@ -26,7 +31,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             await api.login(phone, name || undefined);
             onLoginSuccess();
         } catch (err: unknown) {
-            setError((err as Error).message || 'Đăng nhập thất bại, vui lòng thử lại');
+            setError((err as Error).message || 'Đăng nhập thất bại');
         } finally {
             setLoading(false);
         }
@@ -37,19 +42,28 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.container}
         >
-            <View style={styles.content}>
-                {/* Logo Area */}
-                <View style={styles.logoContainer}>
-                    <Text style={styles.logoEmoji}>🌱</Text>
-                    <Title style={styles.title}>Agri-Loop</Title>
-                    <Text style={styles.subtitle}>Trợ lý AI ủ phân hữu cơ</Text>
-                    <Text style={styles.tagline}>Chuyển đổi phụ phẩm thành tài nguyên</Text>
+            {/* Background Decoration */}
+            <View style={styles.topCircle} />
+
+            <View style={styles.contentContainer}>
+                {/* Brand Section */}
+                <View style={styles.brandWrapper}>
+                    <View style={styles.logoCircle}>
+                        <MaterialCommunityIcons name="sprout" size={64} color={FarmerTheme.colors.accent} />
+                    </View>
+                    <Text style={styles.brandTitle}>Agri-Loop</Text>
+                    <Text style={styles.brandSubtitle}>Trợ lý ủ phân hữu cơ</Text>
+                    <View style={styles.taglineBox}>
+                        <Text style={styles.tagline}>BIẾN PHỤ PHẨM THÀNH TÀI NGUYÊN</Text>
+                    </View>
                 </View>
 
-                {/* Form */}
-                <Surface style={styles.formContainer} elevation={2}>
+                {/* Login Card */}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>XIN CHÀO BÁC NÔNG DÂN</Text>
+
                     <TextInput
-                        label="Số điện thoại"
+                        label="Số điện thoại của bác"
                         value={phone}
                         onChangeText={(text) => {
                             setPhone(text.replace(/[^0-9]/g, ''));
@@ -59,23 +73,30 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                         maxLength={10}
                         style={styles.input}
                         mode="outlined"
-                        left={<TextInput.Icon icon="phone" />}
-                        outlineColor="#2e7d32"
-                        activeOutlineColor="#2e7d32"
+                        outlineColor={FarmerTheme.colors.border}
+                        activeOutlineColor={FarmerTheme.colors.primary}
+                        left={<TextInput.Icon icon={() => <AntDesign name="phone" size={24} color={FarmerTheme.colors.primary} />} />}
+                        theme={{ colors: { background: '#fff' } }}
                     />
 
                     <TextInput
-                        label="Tên của bác (tuỳ chọn)"
+                        label="Tên (Để gọi cho thân mật)"
                         value={name}
                         onChangeText={setName}
                         style={styles.input}
                         mode="outlined"
-                        left={<TextInput.Icon icon="account" />}
-                        outlineColor="#2e7d32"
-                        activeOutlineColor="#2e7d32"
+                        outlineColor={FarmerTheme.colors.border}
+                        activeOutlineColor={FarmerTheme.colors.primary}
+                        left={<TextInput.Icon icon={() => <AntDesign name="user" size={24} color={FarmerTheme.colors.primary} />} />}
+                        theme={{ colors: { background: '#fff' } }}
                     />
 
-                    {error ? <HelperText type="error" style={styles.error}>{error}</HelperText> : null}
+                    {error ? (
+                        <View style={styles.errorBox}>
+                            <AntDesign name="warning" size={18} color={FarmerTheme.colors.error} />
+                            <Text style={styles.errorText}>{error}</Text>
+                        </View>
+                    ) : null}
 
                     <Button
                         mode="contained"
@@ -83,17 +104,18 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                         loading={loading}
                         disabled={loading || phone.length < 10}
                         style={styles.button}
-                        contentStyle={styles.buttonContent}
+                        contentStyle={{ height: 56 }}
                         labelStyle={styles.buttonLabel}
                     >
-                        {loading ? 'Đang xử lý...' : 'Bắt đầu ngay'}
+                        {loading ? 'ĐANG KẾT NỐI...' : 'BẮT ĐẦU NGAY'}
                     </Button>
-                </Surface>
+                </View>
 
                 {/* Footer */}
-                <Text style={styles.footer}>
-                    YDCC 2025 - Youth Digital Citizen Challenge
-                </Text>
+                <View style={styles.footer}>
+                    <Text style={styles.footerText}>YDCC 2025 - Youth Digital Citizen Challenge</Text>
+                    <Text style={styles.footerSub}>Phiên bản Pro Max - Golden Harvest</Text>
+                </View>
             </View>
         </KeyboardAvoidingView>
     );
@@ -102,65 +124,75 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#e8f5e9',
+        backgroundColor: '#f5f5f5',
     },
-    content: {
+    topCircle: {
+        position: 'absolute', top: -height * 0.2, left: -width * 0.2,
+        width: width * 1.4, height: width * 1.4, borderRadius: width * 0.7,
+        backgroundColor: FarmerTheme.colors.primary,
+        opacity: 1,
+    },
+    contentContainer: {
         flex: 1,
         justifyContent: 'center',
         padding: 24,
     },
-    logoContainer: {
-        alignItems: 'center',
-        marginBottom: 32,
+
+    // Brand
+    brandWrapper: { alignItems: 'center', marginBottom: 40 },
+    logoCircle: {
+        width: 100, height: 100, borderRadius: 50,
+        backgroundColor: '#fff',
+        justifyContent: 'center', alignItems: 'center',
+        marginBottom: 16,
+        elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8
     },
-    logoEmoji: {
-        fontSize: 64,
-        marginBottom: 8,
+    brandTitle: {
+        fontSize: 40, fontWeight: '900', color: '#fff', letterSpacing: -1,
+        textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4
     },
-    title: {
-        fontSize: 36,
-        fontWeight: 'bold',
-        color: '#2e7d32',
-        marginBottom: 4,
+    brandSubtitle: {
+        fontSize: 18, color: 'rgba(255,255,255,0.9)', fontWeight: '600', marginTop: 4, letterSpacing: 0.5
     },
-    subtitle: {
-        fontSize: 18,
-        color: '#388e3c',
-        marginBottom: 4,
+    taglineBox: {
+        marginTop: 16, paddingHorizontal: 12, paddingVertical: 4,
+        backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12
     },
-    tagline: {
-        fontSize: 14,
-        color: '#666',
-        fontStyle: 'italic',
+    tagline: { color: FarmerTheme.colors.accent, fontWeight: '800', fontSize: 12, letterSpacing: 1 },
+
+    // Card
+    card: {
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        padding: 32,
+        elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12,
     },
-    formContainer: {
-        padding: 24,
-        borderRadius: 16,
-        backgroundColor: 'white',
+    cardTitle: {
+        fontSize: 20, fontWeight: '800', color: FarmerTheme.colors.primary, marginBottom: 24, textAlign: 'center', letterSpacing: 0.5
     },
     input: {
-        marginBottom: 16,
-        backgroundColor: 'white',
+        marginBottom: 20,
+        backgroundColor: '#fff',
+        fontSize: 16,
     },
-    error: {
-        marginBottom: 8,
+    errorBox: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        backgroundColor: '#fff1f0', padding: 12, borderRadius: 8,
+        marginBottom: 20, borderWidth: 1, borderColor: '#ffccc7',
     },
+    errorText: { color: FarmerTheme.colors.error, fontSize: 14, fontWeight: '600' },
+
     button: {
-        marginTop: 8,
-        backgroundColor: '#2e7d32',
-        borderRadius: 8,
-    },
-    buttonContent: {
-        paddingVertical: 8,
+        borderRadius: 28,
+        backgroundColor: FarmerTheme.colors.accent, // Gold CTA
+        elevation: 4, shadowColor: FarmerTheme.colors.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8
     },
     buttonLabel: {
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 18, fontWeight: '800', letterSpacing: 1, color: '#fff',
     },
-    footer: {
-        textAlign: 'center',
-        marginTop: 32,
-        color: '#666',
-        fontSize: 12,
-    },
+
+    // Footer
+    footer: { marginTop: 40, alignItems: 'center' },
+    footerText: { fontSize: 12, color: FarmerTheme.colors.textSecondary, fontWeight: '600' },
+    footerSub: { fontSize: 10, color: FarmerTheme.colors.placeholder, marginTop: 4 },
 });

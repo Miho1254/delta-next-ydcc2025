@@ -44,6 +44,13 @@ export async function POST(req: NextRequest) {
         if (data.imageBase64) {
             const fileName = `byproducts/${user.userId}/${Date.now()}.jpg`;
             startImageUrl = await uploadImage(data.imageBase64, fileName);
+
+            // FALLBACK: If Supabase Upload fails (invalid key), save Base64 directly to DB
+            // This ensures the user sees their actual photo instead of a placeholder
+            if (!startImageUrl) {
+                console.warn('Upload failed, falling back to Base64 storage');
+                startImageUrl = data.imageBase64;
+            }
         }
 
         const byproduct = await prisma.byProduct.create({
