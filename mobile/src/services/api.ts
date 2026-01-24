@@ -64,11 +64,21 @@ class ApiClient {
         return this.request<{ byproduct: ByProduct; timeline: TimelineEntry[] }>(`/byproducts/${id}`);
     }
 
-    async createByProduct(data: { name: string; type: string; location?: string; imageBase64?: string }) {
+    // Create ByProduct
+    async createByProduct(data: { name: string; type: string; location: string; imageBase64?: string }) {
         return this.request<{ byproduct: ByProduct }>('/byproducts', {
             method: 'POST',
             body: JSON.stringify(data),
         });
+    }
+
+    // Identify ByProduct
+    async identifyByProduct(imageBase64: string): Promise<string> {
+        const response = await this.request<{ identifiedName: string }>('/byproducts/identify', {
+            method: 'POST',
+            body: JSON.stringify({ imageBase64 }),
+        });
+        return response.identifiedName;
     }
 
     async chat(byproductId: string, data: { text?: string; imageBase64?: string; contextString?: string }) {

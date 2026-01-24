@@ -27,7 +27,7 @@ model ByProduct {
   id           String            @id @default(uuid())
   userId       String
   name         String
-  type         ByProductType     @default(unknown)
+  type         String            @default("unknown")
   status       ByProductStatus   @default(new_product)
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
@@ -59,15 +59,10 @@ model TimelineEntry {
   @@map("timeline_entries")
 }
 
-enum ByProductType {
-  straw
-  shrimp_shell
-  hyacinth
-  unknown
-}
-
 enum ByProductStatus {
   new_product
   processing
   ready_to_harvest
 }
+
+

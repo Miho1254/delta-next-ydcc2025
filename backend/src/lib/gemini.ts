@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
+
 export const geminiModel = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
 export interface AIAnalysisResult {
@@ -15,15 +16,6 @@ export interface AIAnalysisResult {
     suggestedQuestions?: string[];
 }
 
-function translateType(type: string): string {
-    const map: Record<string, string> = {
-        straw: 'Rơm rạ',
-        shrimp_shell: 'Vỏ tôm',
-        hyacinth: 'Bèo tây',
-        unknown: 'Chưa xác định',
-    };
-    return map[type] || 'Chưa xác định';
-}
 
 export function buildPrompt(
     byproduct: { name: string; type: string; location: string; contextData: unknown },
@@ -34,42 +26,69 @@ export function buildPrompt(
     const contextData = byproduct.contextData as { decompositionLevel?: number };
 
     return `
-Bạn là một chuyên gia nông nghiệp (AI Agronomist) hỗ trợ nông dân ĐBSCL xử lý phụ phẩm nông nghiệp thành phân bón hữu cơ.
-Bạn nói tiếng Việt, giọng miền Tây, thân thiện. Gọi người dùng là "bác".
+ROLE: You are an expert in organic recycling for ALL types of agricultural waste (AI Agronomist).
+You speak Vietnamese, Mien Tay accent, very friendly. Address the user as "bác".
 
-THỜI TIẾT THỰC TẾ (Quan trọng - Dùng để đưa ra lời khuyên phù hợp):
-${realTimeContext || 'Không có dữ liệu thời tiết'}
+CONTEXT:
+- Object: ${byproduct.name} (Identified as: ${byproduct.type})
+- Location: ${byproduct.location}
+- Weather: ${realTimeContext || 'Unknown'}
+- Decomposition: ${contextData.decompositionLevel || 0}%
 
-ĐỐNG Ủ HIỆN TẠI:
-- Tên: ${byproduct.name}
-- Loại: ${translateType(byproduct.type)}
-- Độ phân hủy hiện tại: ${contextData.decompositionLevel || 0}%
-- Vị trí: ${byproduct.location}
+HISTORY:
+${recentHistory || 'No history yet'}
 
-LỊCH SỬ GẦN ĐÂY:
-${recentHistory || 'Chưa có lịch sử'}
+USER ASKS:
+"${userInput}"
 
-CÂU HỎI MỚI:
-${userInput}
+LOGIC:
+1. Identify the biological composition of "${byproduct.type}" (C/N ratio, structure).
+2. Determine best composting method (Aerobic vs Anaerobic, Lime, Enzymes, Trichoderma).
+3. Give advice in simple Farmer language.
 
-QUAN TRỌNG - FORMAT TRẢ LỜI (JSON):
+RESPONSE FORMAT (JSON ONLY):
 {
-  "decompositionLevel": <số từ 0-100>,
+  "decompositionLevel": <0-100 number>,
   "recommendation": {
-    "action": "<hành động cần làm>",
-    "reason": "<lý do, có thể đề cập thời tiết nếu liên quan>",
-    "estimatedDays": <số ngày còn lại hoặc null>
+    "action": "<what to do next>",
+    "reason": "<why - simplified science>",
+    "estimatedDays": <number or null>
   },
-  "chatResponse": "<câu trả lời thân thiện cho bác nông dân, có thể đề cập thời tiết nếu liên quan>",
-  "suggestedQuestions": ["Câu hỏi 1?", "Câu hỏi 2?", "Câu hỏi 3?"]
+  "chatResponse": "<friendly advice in Mien Tay accent>",
+  "suggestedQuestions": ["<short question 1>", "<short question 2>", "<short question 3>"]
 }
-Chỉ trả về JSON, không có text khác.
 `;
 }
 
 // Simple delay function
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export async function identifyImage(imageBase64: string): Promise<string> {
+    try {
+        const prompt = `
+        Nhìn hình này và xác định đây là phụ phẩm nông nghiệp gì?
+        Trả lời NGẮN GỌN tên tiếng Việt (tối đa 3 từ).
+        Ví dụ: "Vỏ sầu riêng", "Rơm rạ", "Phân bò", "Lục bình".
+        Nếu không phải phụ phẩm nông nghiệp, trả lời "Không xác định".
+        Chỉ trả về tên, không có dấu câu thừa.
+        `;
+
+        const imagePart = {
+            inlineData: {
+                data: imageBase64,
+                mimeType: 'image/jpeg',
+            },
+        };
+
+        const result = await geminiModel.generateContent([prompt, imagePart]);
+        const response = result.response;
+        return response.text().trim();
+    } catch (error) {
+        console.error('Gemini Identify Error:', error);
+        return 'Không xác định';
+    }
 }
 
 export async function analyzeWithGemini(prompt: string, imageBase64?: string, retries = 3): Promise<AIAnalysisResult> {
@@ -103,14 +122,14 @@ export async function analyzeWithGemini(prompt: string, imageBase64?: string, re
                 decompositionLevel: 0,
                 recommendation: {
                     action: 'Kiểm tra lại',
-                    reason: 'AI không thể phân tích, vui lòng thử lại',
+                    reason: 'AI chưa rõ, bác chụp lại kỹ hơn nha',
                     estimatedDays: null,
                 },
-                chatResponse: text || 'Chào bác! Tui đang xử lý, bác đợi chút nha!',
+                chatResponse: text || 'Dạ, cái này lạ quá, con chưa nhìn ra. Bác tả kỹ hơn chút không?',
                 suggestedQuestions: [
-                    'Có cần tưới nước không?',
-                    'Bao lâu nữa thu hoạch?',
-                    'Cần đảo đống không?',
+                    'Cái này ủ được không?',
+                    'Băm nhỏ ra không?',
+                    'Có cần trộn vôi không?',
                 ],
             };
         } catch (error) {

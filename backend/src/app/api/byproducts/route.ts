@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
 const CreateByProductSchema = z.object({
     name: z.string().min(1, 'Tên không được để trống'),
-    type: z.enum(['straw', 'shrimp_shell', 'hyacinth', 'unknown']),
+    type: z.string().min(1, 'Loại không được để trống'),
     location: z.string().default('0,0'),
     imageBase64: z.string().optional(),
 });

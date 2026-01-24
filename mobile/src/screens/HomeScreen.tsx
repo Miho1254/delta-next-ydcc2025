@@ -1,15 +1,15 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, Alert, NativeModules } from 'react-native';
-import { FAB, Card, Title, Text, Chip, IconButton, ActivityIndicator } from 'react-native-paper';
+import { View, StyleSheet, FlatList, RefreshControl, Alert, NativeModules, TouchableOpacity, Image } from 'react-native';
+import { FAB, Title, Text, ActivityIndicator } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import { api, ByProduct } from '../services/api';
 import { HomeScreenProps } from '../types/navigation';
+import { FarmerTheme } from '../theme';
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
     const [byproducts, setByproducts] = useState<ByProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [fabOpen, setFabOpen] = useState(false);
 
     const fetchByProducts = async () => {
         try {
@@ -29,102 +29,51 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         }, [])
     );
 
-    React.useLayoutEffect(() => {
-        navigation.setOptions({
-            headerRight: () => (
-                <IconButton
-                    icon="logout"
-                    iconColor="white"
-                    onPress={() => {
-                        Alert.alert('Đăng xuất', 'Bạn có chắc muốn đăng xuất?', [
-                            { text: 'Huỷ', style: 'cancel' },
-                            {
-                                text: 'Đồng ý',
-                                onPress: async () => {
-                                    await api.clearToken();
-                                    // Hack to reload app since we don't expose auth state setter yet
-                                    if (NativeModules.DevSettings) {
-                                        NativeModules.DevSettings.reload();
-                                    } else {
-                                        Alert.alert('Đã đăng xuất', 'Vui lòng khởi động lại ứng dụng.');
-                                    }
-                                }
-                            }
-                        ]);
-                    }}
-                />
-            ),
-        });
-    }, [navigation]);
-
     const onRefresh = () => {
         setRefreshing(true);
         fetchByProducts();
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'new_product': return '#2196F3';
-            case 'processing': return '#FF9800';
-            case 'ready_to_harvest': return '#4CAF50';
-            default: return '#9E9E9E';
-        }
-    };
-
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'new_product': return 'Mới';
-            case 'processing': return 'Đang ủ';
-            case 'ready_to_harvest': return 'Sẵn sàng';
-            default: return 'Không rõ';
-        }
-    };
-
-    const getTypeText = (type: string) => {
-        switch (type) {
-            case 'straw': return '🌾 Rơm rạ';
-            case 'shrimp_shell': return '🦐 Vỏ tôm';
-            case 'hyacinth': return '🌿 Bèo tây';
-            default: return '❓ Khác';
-        }
-    };
-
-    const renderItem = ({ item }: { item: ByProduct }) => (
-        <Card
-            style={styles.card}
-            onPress={() => navigation.navigate('Chat', { byproductId: item.id, name: item.name })}
-        >
-            <Card.Content>
-                <View style={styles.cardHeader}>
-                    <Title style={styles.cardTitle}>{item.name}</Title>
-                    <Chip
-                        style={{ backgroundColor: getStatusColor(item.status) }}
-                        textStyle={{ color: 'white', fontSize: 12 }}
-                    >
-                        {getStatusText(item.status)}
-                    </Chip>
+    const renderItem = ({ item }: { item: ByProduct }) => {
+        const hasImage = !!item.startImageUrl;
+        return (
+            <TouchableOpacity
+                style={styles.card}
+                onPress={() => navigation.navigate('Chat', { byproductId: item.id, name: item.name })}
+                activeOpacity={0.9}
+            >
+                {/* Thumbnail Image */}
+                <View style={styles.cardImageContainer}>
+                    {hasImage ? (
+                        <Image source={{ uri: item.startImageUrl }} style={styles.cardImage} />
+                    ) : (
+                        <View style={[styles.cardImage, styles.placeholderImage]} >
+                            <Text style={{ fontSize: 30 }}>🌱</Text>
+                        </View>
+                    )}
                 </View>
-                <Text style={styles.cardType}>{getTypeText(item.type)}</Text>
-                <View style={styles.progressContainer}>
-                    <Text style={styles.progressLabel}>Độ phân hủy:</Text>
-                    <Text style={styles.progressValue}>
-                        {item.contextData?.decompositionLevel || 0}%
-                    </Text>
+
+                {/* Content */}
+                <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle} numberOfLines={2}>{item.name}</Text>
+                    <View style={styles.statusRow}>
+                        <Text style={styles.statusIcon}>
+                            {item.status === 'ready_to_harvest' ? '✅' : '⏳'}
+                        </Text>
+                        <Text style={styles.cardStatus}>
+                            {item.status === 'ready_to_harvest' ? 'Xong rồi!' : 'Đang ủ...'}
+                        </Text>
+                    </View>
+                    <Text style={styles.cardType}>{item.type}</Text>
                 </View>
-            </Card.Content>
-            <Card.Actions>
-                <IconButton
-                    icon="chat"
-                    onPress={() => navigation.navigate('Chat', { byproductId: item.id, name: item.name })}
-                />
-            </Card.Actions>
-        </Card>
-    );
+            </TouchableOpacity>
+        );
+    };
 
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#2e7d32" />
+                <ActivityIndicator size="large" color={FarmerTheme.colors.primary} />
                 <Text style={styles.loadingText}>Đang tải...</Text>
             </View>
         );
@@ -132,62 +81,140 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
     return (
         <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Việc Nhà Nông</Text>
+                <Text style={styles.headerSubtitle}>Chào bác Ba! Hôm nay làm gì?</Text>
+            </View>
+
             <FlatList
                 data={byproducts}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[FarmerTheme.colors.primary]} />
                 }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>Chưa có đống ủ nào</Text>
-                        <Text style={styles.emptyHint}>Bấm nút + để tạo đống ủ mới</Text>
+                        <Text style={{ fontSize: 60, marginBottom: 20 }}>🌾</Text>
+                        <Text style={styles.emptyText}>Chưa có việc nào hết trơn!</Text>
+                        <Text style={styles.emptyHint}>Bấm dấu cộng ở dưới để bắt đầu nha.</Text>
                     </View>
                 }
             />
-            <FAB.Group
-                open={fabOpen}
-                icon={fabOpen ? 'close' : 'menu'}
-                actions={[
-                    {
-                        icon: 'cart',
-                        label: 'Chợ nông sản',
-                        onPress: () => navigation.navigate('Market'),
-                        style: { backgroundColor: '#fff' },
-                        color: '#2e7d32',
-                    },
-                    {
-                        icon: 'plus',
-                        label: 'Tạo đống ủ',
-                        onPress: () => navigation.navigate('Create'),
-                        style: { backgroundColor: '#fff' },
-                        color: '#2e7d32',
-                    },
-                ]}
-                onStateChange={({ open }) => setFabOpen(open)}
-                fabStyle={styles.fab}
-                color="white"
-            />
+
+            {/* Massive FAB */}
+            <TouchableOpacity
+                style={styles.fab}
+                onPress={() => navigation.navigate('Create')}
+            >
+                <Text style={styles.fabIcon}>+</Text>
+            </TouchableOpacity>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f5f5f5' },
+    container: { flex: 1, backgroundColor: '#f0f2f5' },
+    header: {
+        paddingHorizontal: 20,
+        paddingTop: 60,
+        paddingBottom: 20,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    headerTitle: FarmerTheme.typography.header,
+    headerSubtitle: {
+        fontSize: 16,
+        color: '#666',
+        marginTop: 4,
+    },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    loadingText: { marginTop: 16, color: '#666' },
-    list: { padding: 16, paddingBottom: 80 },
-    card: { marginBottom: 16, elevation: 2, backgroundColor: 'white' },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-    cardTitle: { fontSize: 18, flex: 1, fontWeight: 'bold' },
-    cardType: { fontSize: 14, color: '#666', marginBottom: 8 },
-    progressContainer: { flexDirection: 'row', alignItems: 'center' },
-    progressLabel: { fontSize: 14, color: '#666' },
-    progressValue: { fontSize: 14, fontWeight: 'bold', color: '#2e7d32', marginLeft: 8 },
-    emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
-    emptyText: { fontSize: 18, color: '#666', marginBottom: 8 },
-    emptyHint: { fontSize: 14, color: '#999' },
-    fab: { backgroundColor: '#2e7d32', paddingBottom: 0 },
+    loadingText: { marginTop: 16, color: '#666', fontSize: 18 },
+    list: { padding: 16, paddingBottom: 120 },
+
+    // Card Styles
+    card: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        marginBottom: 16,
+        borderRadius: 16,
+        padding: 12,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        alignItems: 'center',
+    },
+    cardImageContainer: {
+        marginRight: 16,
+    },
+    cardImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 12,
+    },
+    placeholderImage: {
+        backgroundColor: '#E8F5E9',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cardContent: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    cardTitle: {
+        ...FarmerTheme.typography.subHeader,
+        marginBottom: 4,
+    },
+    statusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    statusIcon: {
+        fontSize: 20,
+        marginRight: 6,
+    },
+    cardStatus: {
+        fontSize: 16,
+        color: '#555',
+        fontWeight: 'bold',
+    },
+    cardType: {
+        fontSize: 14,
+        color: '#888',
+    },
+
+
+    emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
+    emptyText: { ...FarmerTheme.typography.subHeader, textAlign: 'center', marginBottom: 8 },
+    emptyHint: { fontSize: 18, color: '#777', textAlign: 'center', paddingHorizontal: 32 },
+
+    // FAB
+    fab: {
+        position: 'absolute',
+        bottom: 30,
+        right: 20,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: FarmerTheme.colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+    },
+    fabIcon: {
+        color: '#fff',
+        fontSize: 48,
+        lineHeight: 52, // Adjust for centering
+        fontWeight: '300',
+    },
 });
