@@ -29,7 +29,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         });
 
         // Convert BigInt to number for JSON serialization
-        const timelineFormatted = timeline.map(entry => ({
+        const timelineFormatted = timeline.map((entry: { id: string; byproductId: string; timestamp: bigint; role: string; content: string; metadata: unknown }) => ({
             ...entry,
             timestamp: Number(entry.timestamp),
         }));

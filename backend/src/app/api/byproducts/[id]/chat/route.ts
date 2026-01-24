@@ -46,7 +46,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
         const recentHistory = recentTimeline
             .reverse()
-            .map(e => `${e.role}: ${e.content}`)
+            .map((e: { role: string; content: string }) => `${e.role}: ${e.content}`)
             .join('\n');
 
         // Build prompt and call Gemini
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
             take: 20,
         });
 
-        const timelineFormatted = updatedTimeline.map(entry => ({
+        const timelineFormatted = updatedTimeline.map((entry: { id: string; byproductId: string; timestamp: bigint; role: string; content: string; metadata: unknown }) => ({
             ...entry,
             timestamp: Number(entry.timestamp),
         }));
