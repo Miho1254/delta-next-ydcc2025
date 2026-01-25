@@ -103,5 +103,26 @@ Quét mã QR bằng ứng dụng Expo Go trên điện thoại để trải nghi
     *   Bấm "Hỏi thêm" để đặt câu hỏi mới.
 5.  **Chợ Nhà Nông**: Xem sản phẩm, tìm kiếm và gọi ngay cho người bán.
 
+
+## 🤖 AI Tools Disclosure (Công bố sử dụng AI)
+
+Project này được phát triển với sự hỗ trợ của các công cụ AI sau, tuân thủ quy định cuộc thi YDCC 2025:
+
+| Tool | Purpose (Mục đích) | Scope (Phạm vi) |
+|------|--------------------|-----------------|
+| **Google Gemini 1.5 Flash** | **Core Engine**: Phân tích hình ảnh, sinh lời khuyên nông nghiệp, chat với nông dân. | Backend Integration |
+| **Google Antigravity** | **Development**: Hỗ trợ viết code (Scaffolding), Debugging, Refactoring. | Full Stack Development |
+| **Copilot / Cursor** | **Autocomplete**: Gợi ý code nhanh trong IDE. | Development |
+
+> **Cam kết**: Toàn bộ logic nghiệp vụ (Business Logic), kiến trúc hệ thống (Architecture) và kiểm thử (Testing) đều được rà soát và tinh chỉnh bởi đội ngũ phát triển con người.
+
 ---
-*Built with ❤️ for YDCC 2025*
+
+## 📄 Licensing & Attribution
+
+*   **Images**: Unsplash (Placeholders for Demo).
+*   **Icons**: Ant Design Icons, Feather Icons, Material Community Icons.
+*   **Fonts**: Inter, Roboto (Google Fonts).
+
+---
+*Built with ❤️ for YDCC 2025 - Team Delta Next*
