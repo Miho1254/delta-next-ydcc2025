@@ -16,6 +16,15 @@ class ApiClient {
         }
         return this.token;
     }
+    private baseUrl: string = API_URL;
+
+    getBaseUrl() {
+        return this.baseUrl;
+    }
+
+    setBaseUrl(url: string) {
+        this.baseUrl = url;
+    }
 
     async clearToken() {
         this.token = null;
@@ -31,7 +40,7 @@ class ApiClient {
             ...options.headers,
         };
 
-        const response = await fetch(`${API_URL}${endpoint}`, {
+        const response = await fetch(`${this.baseUrl}${endpoint}`, {
             ...options,
             headers,
         });
@@ -39,7 +48,9 @@ class ApiClient {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.error?.userMessage || 'Lỗi hệ thống');
+            const error = new Error(data.error?.userMessage || 'Lỗi hệ thống') as any;
+            error.status = response.status;
+            throw error;
         }
 
         return data;

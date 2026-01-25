@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, Image, Alert, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, Image, Alert, TouchableOpacity, Dimensions, Platform, Linking } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import { api } from '../services/api';
 import { CreateScreenProps } from '../types/navigation';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as Haptics from 'expo-haptics';
 import { FarmerTheme } from '../theme';
 import { AntDesign, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 
@@ -73,20 +74,36 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
 
     const pickFromGallery = async () => {
         try {
+            const { status, canAskAgain } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+            if (status !== 'granted') {
+                Alert.alert(
+                    "Cần Quyền Truy Cập Ảnh",
+                    "Agri-Loop cần bác cho phép truy cập thư viện để chọn ảnh đống ủ.\nVui lòng vào Cài đặt > Quyền > Ảnh để bật lên nhé!",
+                    [
+                        { text: "Để sau", style: "cancel" },
+                        { text: "Mở Cài Đặt", onPress: () => Linking.openSettings() }
+                    ]
+                );
+                return;
+            }
+
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: (ImagePicker as any).MediaType.Images,
-                allowsEditing: true,
+                mediaTypes: 'images',
+                allowsEditing: false,
                 quality: 0.5,
                 base64: true,
             });
 
-            if (!result.canceled) {
-                setImage(result.assets[0].uri);
-                setImageBase64(result.assets[0].base64 || null);
-                if (result.assets[0].base64) identifyImage(result.assets[0].base64);
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const asset = result.assets[0];
+                setImage(asset.uri);
+                setImageBase64(asset.base64 || null);
+                if (asset.base64) identifyImage(asset.base64);
             }
-        } catch (err) {
-            Alert.alert("Lỗi", "Không mở được thư viện ảnh");
+        } catch (err: any) {
+            console.error("Gallery Error:", err);
+            Alert.alert("Lỗi", "Không mở được thư viện ảnh: " + (err.message || "Lỗi không xác định"));
         }
     };
 
@@ -113,6 +130,7 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
                 location: locationCoords,
                 imageBase64: imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : undefined,
             });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             navigation.goBack();
         } catch (error) {
             Alert.alert('Lỗi', 'Không tạo được đống ủ');
@@ -297,7 +315,7 @@ export default function CreateScreen({ navigation }: CreateScreenProps) {
                         {loading ? <ActivityIndicator color="#ffffff" /> : (
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                                 <Text style={styles.confirmBtnText}>XÁC NHẬN & TẠO</Text>
-                                <AntDesign name="arrow-right" size={24} color="#ffffff" />
+                                <Feather name="arrow-right" size={24} color="#ffffff" />
                             </View>
                         )}
                     </TouchableOpacity>

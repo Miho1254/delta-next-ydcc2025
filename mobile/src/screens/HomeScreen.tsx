@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Image, Platform, StatusBar, Dimensions } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Image, Platform, StatusBar, Dimensions, DeviceEventEmitter, Alert } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import { api, ByProduct } from '../services/api';
@@ -26,8 +26,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         try {
             const response = await api.getByProducts();
             setByproducts(response.data);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Fetch error:', error);
+            if (error.status === 401 || error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+                DeviceEventEmitter.emit('auth.logout');
+            }
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -114,7 +117,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                     <View style={styles.actionRow}>
                         <Text style={styles.typeTag}>{item.type}</Text>
                         <View style={styles.arrowBtn}>
-                            <AntDesign name="arrow-right" size={20} color={FarmerTheme.colors.primary} />
+                            <Feather name="arrow-right" size={20} color={FarmerTheme.colors.primary} />
                         </View>
                     </View>
                 </View>
@@ -131,10 +134,22 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <Text style={styles.emptyDesc}>Hãy chụp ảnh phụ phẩm để bắt đầu ủ phân hữu cơ ngay hôm nay.</Text>
             <TouchableOpacity style={styles.emptyBtn} onPress={() => navigation.navigate('Create')}>
                 <Text style={styles.emptyBtnText}>TẠO MỚI NGAY</Text>
-                <AntDesign name="arrow-right" size={20} color="#fff" />
+                <Feather name="arrow-right" size={20} color="#fff" />
             </TouchableOpacity>
         </View>
     );
+
+    // Logout Function
+    const handleLogout = () => {
+        Alert.alert('Đăng xuất', 'Bác muốn thoát tài khoản à?', [
+            { text: 'Hủy', style: 'cancel' },
+            {
+                text: 'Đăng xuất',
+                style: 'destructive',
+                onPress: () => DeviceEventEmitter.emit('auth.logout')
+            }
+        ]);
+    };
 
     if (loading) {
         return (
@@ -153,16 +168,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 {/* Visual Depth: Decorative Circle */}
                 <View style={styles.headerDecoration} />
 
-                <View style={{ flex: 1 }}>
+                <TouchableOpacity style={{ padding: 4 }} onPress={handleLogout}>
+                    <Feather name="log-out" size={24} color={FarmerTheme.colors.primaryLight} />
+                </TouchableOpacity>
+
+                <View style={{ flex: 1, alignItems: 'center' }}>
                     <Text style={styles.headerEyebrow}>XIN CHÀO BÁC,</Text>
-                    <View style={styles.logoContainer}>
-                        <Image
-                            source={require('../../assets/splash-icon.png')}
-                            style={styles.headerLogo}
-                            resizeMode="contain"
-                        />
-                        {/* Removed text as requested */}
-                    </View>
+                    <Image
+                        source={require('../../assets/splash-icon.png')}
+                        style={styles.headerLogo}
+                        resizeMode="contain"
+                    />
                 </View>
                 <TouchableOpacity
                     style={styles.marketBtn}

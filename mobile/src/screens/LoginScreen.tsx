@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform, Alert, Dimensions, ImageBackground } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, Dimensions, TouchableOpacity, Image } from 'react-native';
+import { TextInput, Button, Text } from 'react-native-paper';
 import { api } from '../services/api';
 import { FarmerTheme } from '../theme';
 import { AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text } from 'react-native-paper';
 
 interface LoginScreenProps {
     onLoginSuccess: () => void;
@@ -13,14 +12,21 @@ interface LoginScreenProps {
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
-    const [phone, setPhone] = useState('');
-    const [name, setName] = useState('');
+    const [phone, setPhone] = useState('0987654321');
+    const [name, setName] = useState('Bác Ba Phi');
+    const [apiUrl, setApiUrl] = useState(api.getBaseUrl());
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showDev, setShowDev] = useState(false);
+
+    const handleUrlChange = (text: string) => {
+        setApiUrl(text);
+        api.setBaseUrl(text);
+    };
 
     const handleLogin = async () => {
         if (!phone || phone.length !== 10 || !phone.startsWith('0')) {
-            setError('Số điện thoại không hợp lệ');
+            setError('Vui lòng nhập số điện thoại 10 số, bắt đầu bằng số 0');
             return;
         }
 
@@ -28,10 +34,15 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         setError('');
 
         try {
-            await api.login(phone, name || undefined);
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Kết nối quá hạn. Kiểm tra Server URL?')), 10000)
+            );
+
+            await Promise.race([api.login(phone, name || undefined), timeoutPromise]);
             onLoginSuccess();
-        } catch (err: unknown) {
-            setError((err as Error).message || 'Đăng nhập thất bại');
+        } catch (err: any) {
+            console.log("Login Error", err);
+            setError(err.message || 'Đăng nhập thất bại. Kiểm tra mạng hoặc Server!');
         } finally {
             setLoading(false);
         }
@@ -42,21 +53,26 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.container}
         >
-            {/* Background Decoration */}
             <View style={styles.topCircle} />
 
             <View style={styles.contentContainer}>
-                {/* Brand Section */}
-                <View style={styles.brandWrapper}>
-                    <View style={styles.logoCircle}>
-                        <MaterialCommunityIcons name="sprout" size={64} color={FarmerTheme.colors.accent} />
-                    </View>
+                {/* Brand Section - Triple Tap to Show/Hide Dev */}
+                <TouchableOpacity
+                    activeOpacity={1}
+                    onPress={() => {
+                        // Simple toggle for now, or could count taps
+                        setTimeout(() => setShowDev(p => !p), 200)
+                    }}
+                    style={styles.brandWrapper}
+                >
+                    <Image
+                        source={require('../../assets/icon.png')}
+                        style={{ width: 120, height: 120, marginBottom: 16 }}
+                        resizeMode="contain"
+                    />
                     <Text style={styles.brandTitle}>Agri-Loop</Text>
                     <Text style={styles.brandSubtitle}>Trợ lý ủ phân hữu cơ</Text>
-                    <View style={styles.taglineBox}>
-                        <Text style={styles.tagline}>BIẾN PHỤ PHẨM THÀNH TÀI NGUYÊN</Text>
-                    </View>
-                </View>
+                </TouchableOpacity>
 
                 {/* Login Card */}
                 <View style={styles.card}>
@@ -102,13 +118,27 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                         mode="contained"
                         onPress={handleLogin}
                         loading={loading}
-                        disabled={loading || phone.length < 10}
+                        disabled={loading}
                         style={styles.button}
                         contentStyle={{ height: 56 }}
                         labelStyle={styles.buttonLabel}
                     >
                         {loading ? 'ĐANG KẾT NỐI...' : 'BẮT ĐẦU NGAY'}
                     </Button>
+
+                    {/* Server Config Input */}
+                    {showDev && (
+                        <View style={{ marginTop: 20, paddingTop: 10, borderTopWidth: 1, borderColor: '#eee' }}>
+                            <Text style={{ fontSize: 12, marginBottom: 4, color: '#888' }}>Server API URL:</Text>
+                            <TextInput
+                                value={apiUrl}
+                                onChangeText={handleUrlChange}
+                                style={[styles.input, { height: 40, fontSize: 14 }]}
+                                mode="outlined"
+                                dense
+                            />
+                        </View>
+                    )}
                 </View>
 
                 {/* Footer */}
@@ -137,8 +167,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: 24,
     },
-
-    // Brand
     brandWrapper: { alignItems: 'center', marginBottom: 40 },
     logoCircle: {
         width: 100, height: 100, borderRadius: 50,
@@ -159,8 +187,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12
     },
     tagline: { color: FarmerTheme.colors.accent, fontWeight: '800', fontSize: 12, letterSpacing: 1 },
-
-    // Card
     card: {
         backgroundColor: '#fff',
         borderRadius: 24,
@@ -181,7 +207,6 @@ const styles = StyleSheet.create({
         marginBottom: 20, borderWidth: 1, borderColor: '#ffccc7',
     },
     errorText: { color: FarmerTheme.colors.error, fontSize: 14, fontWeight: '600' },
-
     button: {
         borderRadius: 28,
         backgroundColor: FarmerTheme.colors.accent, // Gold CTA
@@ -190,8 +215,6 @@ const styles = StyleSheet.create({
     buttonLabel: {
         fontSize: 18, fontWeight: '800', letterSpacing: 1, color: '#fff',
     },
-
-    // Footer
     footer: { marginTop: 40, alignItems: 'center' },
     footerText: { fontSize: 12, color: FarmerTheme.colors.textSecondary, fontWeight: '600' },
     footerSub: { fontSize: 10, color: FarmerTheme.colors.placeholder, marginTop: 4 },

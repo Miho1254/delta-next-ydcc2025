@@ -22,6 +22,21 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cho phép Agri-Loop truy cập ảnh để nhận diện đống ủ."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Cho phép Agri-Loop dùng camera để chụp ảnh đống ủ."
+        }
+      ]
+    ]
   }
 }

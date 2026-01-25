@@ -5,7 +5,9 @@ import { Provider as PaperProvider, MD3LightTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, DeviceEventEmitter } from 'react-native';
+import { useFonts } from 'expo-font';
+import { AntDesign, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -28,8 +30,25 @@ const theme = {
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
+  // Preload Fonts for performance and to avoid layout shift
+  const [fontsLoaded] = useFonts({
+    ...AntDesign.font,
+    ...Feather.font,
+    ...MaterialCommunityIcons.font,
+  });
+
   useEffect(() => {
     checkAuth();
+
+    // Listen for logout events from anywhere
+    const subscription = DeviceEventEmitter.addListener('auth.logout', async () => {
+      await AsyncStorage.removeItem('accessToken');
+      setIsLoggedIn(false);
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   const checkAuth = async () => {
@@ -37,7 +56,7 @@ export default function App() {
     setIsLoggedIn(!!token);
   };
 
-  if (isLoggedIn === null) {
+  if (isLoggedIn === null || !fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#2e7d32" />
