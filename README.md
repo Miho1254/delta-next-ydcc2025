@@ -110,8 +110,8 @@ Dự án sử dụng các công cụ AI sau đây theo quy định của YDCC 20
 | Họ và Tên | Vai trò (Role) | Đóng góp (Contribution) |
 |-----------|----------------|-------------------------|
 | **Đặng Quang Hiển** | **Full Stack Developer** | Phát triển toàn bộ Source Code (Mobile & Backend), System Architecture. |
-| Trương Tuấn Minh | [Researcher/Designer] | Nghiên cứu thị trường, Thiết kế Slide, Quay dựng Video. |
-| Trần Minh Triết | [Business Analyst] | Phân tích nghiệp vụ nông nghiệp, Lên ý tưởng sản phẩm. |
-| Đặng Trọng Phúc | [Business Analyst] | Lên ý tưởng sản phẩm. |
+| Trương Tuấn Minh | Researcher/Designer | Nghiên cứu thị trường, Thiết kế Slide, Quay dựng Video. |
+| Trần Minh Triết | Business Analyst | Phân tích nghiệp vụ nông nghiệp, Lên ý tưởng sản phẩm. |
+| Đặng Trọng Phúc | Business Analyst | Lên ý tưởng sản phẩm. |
 
 *Team Delta Next - YDCC 2025*
